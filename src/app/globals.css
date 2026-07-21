@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Neutral warm background, inspired by the off-white backdrop of the Chalehat logo */
+    --background: 40 20% 98%;
+    --foreground: 190 32% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 190 32% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 190 32% 12%;
+
+    /* Primary = deep teal from the logo's chalet/palm outline */
+    --primary: 184 55% 26%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 190 32% 15%;
+
+    --muted: 40 15% 95%;
+    --muted-foreground: 190 12% 42%;
+
+    /* Accent = gold from the logo wordmark */
+    --accent: 38 62% 52%;
+    --accent-foreground: 30 45% 14%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 152 55% 32%;
+    --success-foreground: 0 0% 98%;
+
+    --border: 190 18% 88%;
+    --input: 190 18% 88%;
+    --ring: 184 55% 26%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
