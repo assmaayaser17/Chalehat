@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, LayoutDashboard, LogOut } from "lucide-react";
+import { CalendarCheck, KeyRound, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -37,7 +37,9 @@ export function UserMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>
-          <p className="font-semibold">{fullName}</p>
+          <p dir="auto" className="font-semibold">
+            {fullName}
+          </p>
           <p className="text-xs font-normal text-muted-foreground">{ROLE_LABELS_AR[role]}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -54,6 +56,11 @@ export function UserMenu({
             </Link>
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem asChild>
+          <Link href="/account/change-password">
+            <KeyRound /> Change Password
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => logoutAction()} className="text-destructive focus:bg-destructive/10">
           <LogOut /> Log out

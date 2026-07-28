@@ -31,3 +31,47 @@ export const registerSchema = z
   });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+
+// The backend's own examples mix local (0599000000) and international
+// (+970599000000) formats for phone numbers across different endpoints, so
+// this stays lenient rather than picking one and rejecting the other.
+const phoneNumberSchema = z.string().regex(/^\+?\d{9,13}$/, "Invalid phone number");
+
+const newPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Must contain an uppercase letter")
+  .regex(/[0-9]/, "Must contain a digit");
+
+export const forgotPasswordSchema = z.object({
+  phoneNumber: phoneNumberSchema,
+});
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    phoneNumber: phoneNumberSchema,
+    code: z.string().min(4, "Enter the code sent to your phone"),
+    newPassword: newPasswordSchema,
+    confirmNewPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords don't match",
+    path: ["confirmNewPassword"],
+  });
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password"),
+    newPassword: newPasswordSchema,
+    confirmNewPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords don't match",
+    path: ["confirmNewPassword"],
+  });
+
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;

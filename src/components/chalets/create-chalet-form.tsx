@@ -71,7 +71,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
                   <SelectContent>
                     {chaletAdmins.map((admin) => (
                       <SelectItem key={admin.id} value={admin.id}>
-                        {admin.fullName} ({admin.userName})
+                        <span dir="auto">{admin.fullName}</span> ({admin.userName})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -85,13 +85,13 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
       <section className="space-y-4 border-t border-border pt-8">
         <h2 className="text-sm font-semibold text-primary-700">Basic information</h2>
         <FormField id="name" label="Chalet name" error={errors.name?.message}>
-          <Input id="name" {...register("name")} />
+          <Input id="name" dir="auto" {...register("name")} />
         </FormField>
         <FormField id="description" label="Description" error={errors.description?.message}>
-          <Textarea id="description" rows={4} {...register("description")} />
+          <Textarea id="description" dir="auto" rows={4} {...register("description")} />
         </FormField>
         <FormField id="address" label="Address" error={errors.address?.message}>
-          <Input id="address" {...register("address")} />
+          <Input id="address" dir="auto" {...register("address")} />
         </FormField>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField id="latitude" label="Latitude" error={errors.latitude?.message}>
@@ -162,7 +162,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
           <Input id="whatsAppNumber" placeholder="0591234567" {...register("whatsAppNumber")} />
         </FormField>
         <FormField id="cancellationPolicy" label="Cancellation policy" error={errors.cancellationPolicy?.message}>
-          <Textarea id="cancellationPolicy" rows={3} {...register("cancellationPolicy")} />
+          <Textarea id="cancellationPolicy" dir="auto" rows={3} {...register("cancellationPolicy")} />
         </FormField>
       </section>
 

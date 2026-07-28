@@ -7,11 +7,11 @@ import { LoginForm } from "@/components/auth/login-form";
 export const metadata: Metadata = { title: "Log in" };
 
 interface PageProps {
-  searchParams: Promise<{ registered?: string; next?: string }>;
+  searchParams: Promise<{ registered?: string; resetPassword?: string; next?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
-  const { registered, next } = await searchParams;
+  const { registered, resetPassword, next } = await searchParams;
 
   return (
     <AuthCard
@@ -29,6 +29,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
       {registered && (
         <Alert variant="success" className="mb-4">
           Your account was created successfully — you can log in now.
+        </Alert>
+      )}
+      {resetPassword && (
+        <Alert variant="success" className="mb-4">
+          Your password was reset successfully — you can log in now.
         </Alert>
       )}
       <LoginForm next={next} />

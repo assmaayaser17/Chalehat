@@ -38,7 +38,7 @@ export function CreateAmenityForm() {
       {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
       <FormField id="name" label="Amenity name" error={errors.name?.message}>
-        <Input id="name" placeholder="Pool, WiFi, ..." {...register("name")} />
+        <Input id="name" dir="auto" placeholder="Pool, WiFi, ..." {...register("name")} />
       </FormField>
 
       <FormField id="iconUrl" label="Icon URL (optional)" error={errors.iconUrl?.message}>

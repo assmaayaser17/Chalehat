@@ -203,6 +203,7 @@ export function ChaletBookingWidget({
         <Label htmlFor="notes">Notes (optional)</Label>
         <Textarea
           id="notes"
+          dir="auto"
           rows={2}
           value={notes}
           onChange={(e) => {

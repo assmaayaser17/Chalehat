@@ -39,7 +39,7 @@ export function CreateSeasonForm() {
       {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
       <FormField id="name" label="Season name" error={errors.name?.message}>
-        <Input id="name" placeholder="School holidays" {...register("name")} />
+        <Input id="name" dir="auto" placeholder="School holidays" {...register("name")} />
       </FormField>
 
       <div className="grid grid-cols-2 gap-4">

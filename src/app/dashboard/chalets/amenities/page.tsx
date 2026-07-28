@@ -30,6 +30,7 @@ export default async function BrowseAmenitiesPage() {
               {amenities.map((amenity) => (
                 <div
                   key={amenity.id}
+                  dir="auto"
                   className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-foreground transition-colors hover:border-primary-200 hover:bg-primary-50/50"
                 >
                   {amenity.iconUrl ? (

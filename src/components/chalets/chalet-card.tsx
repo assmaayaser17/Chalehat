@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Bath, BedDouble, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatItem } from "@/components/shared/stat-item";
 import { formatCurrency } from "@/lib/utils";
 import type { Chalet } from "@/lib/api/types";
 
@@ -55,27 +56,26 @@ export function ChaletCard({ chalet, href }: { chalet: Chalet; href?: string }) 
       </Link>
       <CardContent className="space-y-2.5 p-4">
         <Link href={link}>
-          <h3 className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary">
+          <h3
+            dir="auto"
+            className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary"
+          >
             {chalet.name}
           </h3>
         </Link>
-        <p className="line-clamp-1 flex items-center gap-1 text-sm text-muted-foreground">
+        <p dir="auto" className="line-clamp-1 flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           {chalet.address}
         </p>
         {chalet.description && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">{chalet.description}</p>
+          <p dir="auto" className="line-clamp-2 text-sm text-muted-foreground">
+            {chalet.description}
+          </p>
         )}
-        <div className="flex items-center gap-4 border-t border-border pt-3 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Users className="h-4 w-4" /> {chalet.maxGuests}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <BedDouble className="h-4 w-4" /> {chalet.bedroomsCount}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Bath className="h-4 w-4" /> {chalet.bathroomsCount}
-          </span>
+        <div className="grid grid-cols-3 divide-x divide-border rtl:divide-x-reverse border-t border-border pt-3">
+          <StatItem icon={Users} value={chalet.maxGuests} label="Guests" />
+          <StatItem icon={BedDouble} value={chalet.bedroomsCount} label="Rooms" className="ps-3" />
+          <StatItem icon={Bath} value={chalet.bathroomsCount} label="Baths" className="ps-3" />
         </div>
       </CardContent>
     </Card>

@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CalendarRange, Loader2, Plus, Trash2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CalendarRange, Loader2, Plus, Sparkle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +13,7 @@ import {
   deleteChaletSeasonalPriceAction,
   linkChaletSeasonalPriceAction,
 } from "@/lib/actions/chalet-seasonal-price-actions";
+import { formatCurrency } from "@/lib/utils";
 import type { ChaletSeasonalPrice, Season } from "@/lib/api/types";
 
 /**
@@ -89,47 +89,45 @@ export function ChaletSeasonalPricesManager({
             description="The base price applies year-round until you link one."
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Season</TableHead>
-                <TableHead>Dates</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {linkedPrices.map((linked) => {
-                const season = seasonById.get(linked.seasonId);
-                const isPending = pendingId === linked.id;
-                return (
-                  <TableRow key={linked.id}>
-                    <TableCell className="font-medium">{season?.name ?? `Season #${linked.seasonId}`}</TableCell>
-                    <TableCell className="text-muted-foreground">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {linkedPrices.map((linked) => {
+              const season = seasonById.get(linked.seasonId);
+              const isPending = pendingId === linked.id;
+              return (
+                <div
+                  key={linked.id}
+                  className="flex items-start justify-between gap-3 rounded-lg border border-accent-200 bg-accent-100/50 p-4"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-accent-700">
+                      <Sparkle className="h-3.5 w-3.5 fill-current" /> Seasonal price
+                    </p>
+                    <p dir="auto" className="truncate text-sm font-semibold text-foreground">
+                      {season?.name ?? `Season #${linked.seasonId}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
                       {season ? `${season.startDate} – ${season.endDate}` : "—"}
-                    </TableCell>
-                    <TableCell>{linked.price}</TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove seasonal price"
-                        disabled={pendingId !== null}
-                        onClick={() => handleDelete(linked.id)}
-                      >
-                        {isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    </p>
+                    <p className="text-lg font-bold tabular-nums text-accent-700">{formatCurrency(linked.price)}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove seasonal price"
+                    disabled={pendingId !== null}
+                    onClick={() => handleDelete(linked.id)}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -152,7 +150,7 @@ export function ChaletSeasonalPricesManager({
                 <SelectContent>
                   {available.map((season) => (
                     <SelectItem key={season.id} value={String(season.id)}>
-                      {season.name} ({season.startDate} – {season.endDate})
+                      <span dir="auto">{season.name}</span> ({season.startDate} – {season.endDate})
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -54,7 +54,7 @@ export function CreateStaffForm() {
       {success && <Alert variant="success">Staff member added successfully.</Alert>}
 
       <FormField id="fullName" label="Full name" error={errors.fullName?.message}>
-        <Input id="fullName" {...register("fullName")} />
+        <Input id="fullName" dir="auto" {...register("fullName")} />
       </FormField>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

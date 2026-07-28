@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { loginAction } from "@/lib/auth/actions";
 import { FormField } from "@/components/shared/form-field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
@@ -40,8 +42,17 @@ export function LoginForm({ next }: { next?: string } = {}) {
         <Input id="identifier" autoComplete="username" {...register("identifier")} />
       </FormField>
 
-      <FormField id="password" label="Password" error={errors.password?.message}>
-        <Input id="password" type="password" autoComplete="current-password" {...register("password")} />
+      <FormField
+        id="password"
+        label="Password"
+        error={errors.password?.message}
+        labelAction={
+          <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+            Forgot password?
+          </Link>
+        }
+      >
+        <PasswordInput id="password" autoComplete="current-password" {...register("password")} />
       </FormField>
 
       <Button type="submit" className="w-full" loading={isSubmitting}>

@@ -2,11 +2,17 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { loginUser, registerUser, revokeToken } from "@/lib/api/auth";
+import { changePassword, forgotPassword, loginUser, registerUser, resetPassword, revokeToken } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { buildSession, clearSession, getSession, setSession } from "@/lib/auth/session";
 import { STAFF_MANAGEMENT_ROLES, type UserRole } from "@/lib/api/types";
-import type { LoginFormValues, RegisterFormValues } from "@/lib/validations/auth";
+import type {
+  ChangePasswordFormValues,
+  ForgotPasswordFormValues,
+  LoginFormValues,
+  RegisterFormValues,
+  ResetPasswordFormValues,
+} from "@/lib/validations/auth";
 
 export type ActionResult = { success: true } | { success: false; message: string };
 
@@ -83,6 +89,44 @@ export async function registerAction(values: RegisterFormValues): Promise<Action
     };
   }
   redirect("/login?registered=1");
+}
+
+export async function forgotPasswordAction(values: ForgotPasswordFormValues): Promise<ActionResult> {
+  try {
+    await forgotPassword({ phoneNumber: values.phoneNumber });
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    console.error("[forgotPasswordAction] unexpected error:", err);
+    return { success: false, message: "An unexpected error occurred. Try again." };
+  }
+  redirect(`/reset-password?phone=${encodeURIComponent(values.phoneNumber)}`);
+}
+
+export async function resetPasswordAction(values: ResetPasswordFormValues): Promise<ActionResult> {
+  try {
+    await resetPassword(values);
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    console.error("[resetPasswordAction] unexpected error:", err);
+    return { success: false, message: "An unexpected error occurred. Try again." };
+  }
+  redirect("/login?resetPassword=1");
+}
+
+export async function changePasswordAction(values: ChangePasswordFormValues): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { success: false, message: "You must log in first." };
+
+  try {
+    await changePassword(values);
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    console.error("[changePasswordAction] unexpected error:", err);
+    return { success: false, message: "An unexpected error occurred. Try again." };
+  }
+  // No redirect — this is a settings-style form the user stays on; the
+  // caller shows an inline success message instead.
+  return { success: true };
 }
 
 export async function logoutAction(): Promise<void> {

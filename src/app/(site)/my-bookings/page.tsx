@@ -50,7 +50,7 @@ export default async function MyBookingsPage() {
               <Card key={booking.id}>
                 <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <div>
-                    <p className="font-semibold text-foreground">
+                    <p dir="auto" className="font-semibold text-foreground">
                       {booking.chaletName ?? `Chalet #${booking.chaletId}`}
                     </p>
                     {firstDay && (

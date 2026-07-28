@@ -43,10 +43,24 @@ export function middleware(request: NextRequest) {
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isDashboard = pathname.startsWith("/dashboard");
   const isMyBookings = pathname.startsWith("/my-bookings");
+  const isAccount = pathname.startsWith("/account");
 
   // Logged-in users shouldn't see the login/register screens again.
   if (isAuthPage && session) {
     return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+  }
+
+  // Account settings (e.g. change password) — every role can reach this, no
+  // role-specific scoping like /dashboard or /my-bookings.
+  if (isAccount) {
+    if (!session || normalizeRole(session.role) === null) {
+      const url = new URL("/login", request.url);
+      url.searchParams.set("next", pathname);
+      const response = NextResponse.redirect(url);
+      if (session) response.cookies.delete(COOKIE_NAME);
+      return response;
+    }
+    return NextResponse.next();
   }
 
   if (isMyBookings) {
@@ -132,5 +146,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/my-bookings/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/my-bookings/:path*", "/account/:path*", "/login", "/register"],
 };

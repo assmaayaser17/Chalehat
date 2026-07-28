@@ -4,39 +4,51 @@
 
 @layer base {
   :root {
-    /* Neutral warm background, inspired by the off-white backdrop of the Chalehat logo */
-    --background: 40 20% 98%;
-    --foreground: 190 32% 12%;
+    /*
+     * Brand tokens derived from the Chalehat logo — deep forest teal +
+     * warm gold sun accent on a cream/sand background. All HSL, "H S% L%"
+     * (no commas) to match Tailwind's hsl(var(--x)) usage below.
+     */
 
-    --card: 0 0% 100%;
-    --card-foreground: 190 32% 12%;
+    /* Sand (warm cream neutrals) */
+    --background: 41 47% 96%; /* sand-50  #FAF7F1 */
+    --foreground: 153 11% 12%; /* ink-900  #1C2320 */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 190 32% 12%;
+    --card: 40 41% 91%; /* sand-100 #F2ECE0 */
+    --card-foreground: 153 11% 12%;
 
-    /* Primary = deep teal from the logo's chalet/palm outline */
-    --primary: 184 55% 26%;
+    --popover: 40 41% 91%;
+    --popover-foreground: 153 11% 12%;
+
+    /* Primary = deep forest teal (logo-exact at 800) */
+    --primary: 169 42% 20%; /* primary-800 #1E4A42 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 20% 94%;
-    --secondary-foreground: 190 32% 15%;
+    --secondary: 41 38% 88%;
+    --secondary-foreground: 153 11% 12%;
 
-    --muted: 40 15% 95%;
-    --muted-foreground: 190 12% 42%;
+    --muted: 41 30% 89%;
+    --muted-foreground: 139 16% 38%; /* ink-600 #5C665F */
 
-    /* Accent = gold from the logo wordmark */
-    --accent: 38 62% 52%;
+    /* Accent = warm gold (logo-exact at 600) — CTAs/emphasis only */
+    --accent: 39 56% 53%; /* accent-600 #CB9A45 */
     --accent-foreground: 30 45% 14%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 6 51% 46%; /* danger-600 #B0453A */
     --destructive-foreground: 0 0% 98%;
 
-    --success: 152 55% 32%;
+    --success: 150 33% 36%; /* success-600 #3E7A5C */
     --success-foreground: 0 0% 98%;
 
-    --border: 190 18% 88%;
-    --input: 190 18% 88%;
-    --ring: 184 55% 26%;
+    --warning: 33 63% 48%; /* warning-600 #C9822E */
+    --warning-foreground: 0 0% 100%;
+
+    --info: 201 51% 36%; /* info-600 #2D6A8A */
+    --info-foreground: 0 0% 98%;
+
+    --border: 41 33% 83%; /* sand-300 #E2D9C6 */
+    --input: 41 33% 83%;
+    --ring: 169 40% 30%; /* primary-600, interactive */
 
     --radius: 0.75rem;
   }
@@ -51,5 +63,6 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-variant-numeric: tabular-nums;
   }
 }

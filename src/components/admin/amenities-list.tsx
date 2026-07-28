@@ -86,9 +86,9 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                 <TableRow key={amenity.id}>
                   <TableCell className="font-medium">
                     {isEditing ? (
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                      <Input dir="auto" value={editName} onChange={(e) => setEditName(e.target.value)} />
                     ) : (
-                      amenity.name
+                      <span dir="auto">{amenity.name}</span>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">

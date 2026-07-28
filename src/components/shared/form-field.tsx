@@ -11,18 +11,24 @@ export function FormField({
   id,
   label,
   error,
+  labelAction,
   className,
   children,
 }: {
   id: string;
   label: string;
   error?: string;
+  /** Optional trailing element next to the label, e.g. a "Forgot password?" link. */
+  labelAction?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={id}>{label}</Label>
+        {labelAction}
+      </div>
       {children}
       {error && <p className="text-xs font-medium text-destructive">{error}</p>}
     </div>

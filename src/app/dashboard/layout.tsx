@@ -28,7 +28,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
         <div className="border-t border-border p-4">
           <div className="rounded-md bg-muted/60 px-3 py-2.5">
-            <p className="truncate text-sm font-medium text-foreground">{session.fullName}</p>
+            <p dir="auto" className="truncate text-sm font-medium text-foreground">
+              {session.fullName}
+            </p>
             <Badge variant="default" className="mt-1.5">
               {ROLE_LABELS_AR[session.role]}
             </Badge>
@@ -43,7 +45,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Logo />
           </div>
           <span className="hidden text-sm text-muted-foreground lg:block">
-            Welcome back, <strong className="font-semibold text-foreground">{session.fullName}</strong>
+            Welcome back,{" "}
+            <strong dir="auto" className="font-semibold text-foreground">
+              {session.fullName}
+            </strong>
           </span>
           <UserMenu fullName={session.fullName} role={session.role} dashboardHref="/dashboard" />
         </header>

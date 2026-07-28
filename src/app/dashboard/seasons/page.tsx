@@ -61,7 +61,9 @@ export default async function SeasonsPage() {
               <TableBody>
                 {seasons.map((season) => (
                   <TableRow key={season.id}>
-                    <TableCell className="font-medium">{season.name}</TableCell>
+                    <TableCell dir="auto" className="font-medium">
+                      {season.name}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(season.startDate)}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(season.endDate)}</TableCell>
                     <TableCell>

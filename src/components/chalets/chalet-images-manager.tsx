@@ -142,16 +142,19 @@ export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: num
               >
                 <div className="relative aspect-square bg-primary-50">
                   <Image src={image.url} alt="" fill className="object-cover" sizes="200px" />
-                  <div className="absolute inset-x-2 top-2 flex flex-wrap gap-1">
-                    <Badge variant={image.isApproved ? "success" : "outline"} className="shadow-sm">
-                      {image.isApproved ? "Approved" : "Pending"}
+                  <div className="absolute start-2 top-2">
+                    <Badge variant={image.isApproved ? "success" : "warning"} className="shadow-sm">
+                      {image.isApproved ? "Approved" : "Pending review"}
                     </Badge>
-                    {image.isCoverImage && (
-                      <Badge variant="accent" className="shadow-sm">
-                        Cover
-                      </Badge>
-                    )}
                   </div>
+                  {image.isCoverImage && (
+                    <div
+                      className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-accent-600 text-white shadow-sm"
+                      title="Cover image"
+                    >
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 p-2">
                   {!image.isApproved && (

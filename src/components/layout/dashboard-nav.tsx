@@ -69,10 +69,18 @@ function navSectionsForRole(role: UserRole): NavSection[] {
   return sections;
 }
 
+/** Active nav-item styling per role, so each role's dashboard reads as visually distinct at a glance. */
+function activeClassesForRole(role: UserRole): string {
+  if (role === "SuperAdmin") return "bg-accent-100 text-accent-900";
+  // SystemAdmin and ChaletAdmin both stay in the primary teal family.
+  return "bg-primary-100 text-primary-800";
+}
+
 /** Client Component: `usePathname` is a hook, so the nav (and only the nav) must be client-rendered. */
 export function DashboardNav({ role, onNavigate }: { role: UserRole; onNavigate?: () => void }) {
   const pathname = usePathname();
   const sections = navSectionsForRole(role);
+  const activeClasses = activeClassesForRole(role);
 
   return (
     <nav className="flex flex-col gap-6">
@@ -93,9 +101,7 @@ export function DashboardNav({ role, onNavigate }: { role: UserRole; onNavigate?
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary-50 text-primary-800"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    active ? activeClasses : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />

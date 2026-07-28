@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { StatItem } from "@/components/shared/stat-item";
 import { ApiError } from "@/lib/api/client";
 import { getChaletById } from "@/lib/api/chalet";
 import { getSession } from "@/lib/auth/session";
@@ -89,8 +90,10 @@ export default async function ChaletDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          <h1 className="mt-6 text-2xl font-bold text-foreground md:text-3xl">{chalet.name}</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-muted-foreground">
+          <h1 dir="auto" className="mt-6 text-2xl font-bold text-foreground md:text-3xl">
+            {chalet.name}
+          </h1>
+          <p dir="auto" className="mt-1 flex items-center gap-1.5 text-muted-foreground">
             <MapPin className="h-4 w-4 shrink-0" /> {chalet.address}
           </p>
 
@@ -105,7 +108,9 @@ export default async function ChaletDetailPage({ params }: PageProps) {
           <Separator className="my-6" />
 
           <h2 className="mb-2 text-lg font-semibold text-foreground">About this chalet</h2>
-          <p className="whitespace-pre-line leading-relaxed text-muted-foreground">{chalet.description}</p>
+          <p dir="auto" className="whitespace-pre-line leading-relaxed text-muted-foreground">
+            {chalet.description}
+          </p>
 
           {chalet.amenities && chalet.amenities.length > 0 && (
             <>
@@ -113,7 +118,11 @@ export default async function ChaletDetailPage({ params }: PageProps) {
               <h2 className="mb-3 text-lg font-semibold text-foreground">Amenities</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {chalet.amenities.map((amenity) => (
-                  <div key={amenity.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div
+                    key={amenity.id}
+                    dir="auto"
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
                     {amenity.iconUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={amenity.iconUrl} alt="" className="h-5 w-5 shrink-0" />
@@ -130,7 +139,7 @@ export default async function ChaletDetailPage({ params }: PageProps) {
           <Separator className="my-6" />
 
           <h2 className="mb-3 text-lg font-semibold text-foreground">Cancellation policy</h2>
-          <p className="leading-relaxed text-muted-foreground">{chalet.cancellationPolicy}</p>
+          <p dir="auto" className="leading-relaxed text-muted-foreground">{chalet.cancellationPolicy}</p>
         </div>
 
         <div className="lg:col-span-1">
@@ -143,19 +152,11 @@ export default async function ChaletDetailPage({ params }: PageProps) {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="h-4 w-4 shrink-0 text-primary-600" /> {chalet.maxGuests} guests
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <BedDouble className="h-4 w-4 shrink-0 text-primary-600" /> {chalet.bedroomsCount} rooms
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Bath className="h-4 w-4 shrink-0 text-primary-600" /> {chalet.bathroomsCount} baths
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Moon className="h-4 w-4 shrink-0 text-primary-600" /> {chalet.minNights}-{chalet.maxNights} nights
-                </div>
+              <div className="grid grid-cols-2 gap-y-4">
+                <StatItem icon={Users} value={chalet.maxGuests} label="Guests" />
+                <StatItem icon={BedDouble} value={chalet.bedroomsCount} label="Rooms" />
+                <StatItem icon={Bath} value={chalet.bathroomsCount} label="Baths" />
+                <StatItem icon={Moon} value={`${chalet.minNights}–${chalet.maxNights}`} label="Nights" />
               </div>
 
               <Separator />

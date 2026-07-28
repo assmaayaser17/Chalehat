@@ -7,6 +7,7 @@ import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth"
 import { registerAction } from "@/lib/auth/actions";
 import { FormField } from "@/components/shared/form-field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
@@ -29,7 +30,7 @@ export function RegisterForm() {
       {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
       <FormField id="fullName" label="Full name" error={errors.fullName?.message}>
-        <Input id="fullName" autoComplete="name" {...register("fullName")} />
+        <Input id="fullName" dir="auto" autoComplete="name" {...register("fullName")} />
       </FormField>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -47,15 +48,10 @@ export function RegisterForm() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField id="password" label="Password" error={errors.password?.message}>
-          <Input id="password" type="password" autoComplete="new-password" {...register("password")} />
+          <PasswordInput id="password" autoComplete="new-password" {...register("password")} />
         </FormField>
         <FormField id="confirmPassword" label="Confirm password" error={errors.confirmPassword?.message}>
-          <Input
-            id="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            {...register("confirmPassword")}
-          />
+          <PasswordInput id="confirmPassword" autoComplete="new-password" {...register("confirmPassword")} />
         </FormField>
       </div>
 

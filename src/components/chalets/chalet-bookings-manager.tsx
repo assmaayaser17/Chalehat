@@ -96,7 +96,9 @@ export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number
               return (
                 <React.Fragment key={booking.id}>
                   <TableRow>
-                    <TableCell className="font-medium">{booking.customerName ?? `#${booking.id}`}</TableCell>
+                    <TableCell dir="auto" className="font-medium">
+                      {booking.customerName ?? `#${booking.id}`}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {firstDay ? (
                         <>

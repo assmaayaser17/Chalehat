@@ -81,7 +81,9 @@ export function UsersByRoleTable() {
           <TableBody>
             {data.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.fullName}</TableCell>
+                <TableCell dir="auto" className="font-medium">
+                  {user.fullName}
+                </TableCell>
                 <TableCell className="text-muted-foreground">{user.userName}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>

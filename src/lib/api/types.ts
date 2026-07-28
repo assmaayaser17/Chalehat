@@ -48,6 +48,24 @@ export interface RevokeRequest {
   refreshToken: string;
 }
 
+export interface ForgotPasswordRequest {
+  phoneNumber: string;
+}
+
+export interface ResetPasswordRequest {
+  phoneNumber: string;
+  code: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+/** Requires a logged-in user's access token — see `authFetch`. */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
 /** Decoded shape of the JWT access token's claims. */
 export interface AccessTokenClaims {
   nameidentifier: string;

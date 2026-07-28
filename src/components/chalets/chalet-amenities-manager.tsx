@@ -70,7 +70,7 @@ export function ChaletAmenitiesManager({
         ) : (
           <div className="flex flex-wrap gap-2">
             {linkedAmenities.map((amenity) => (
-              <Badge key={amenity.id} variant="success" className="gap-1">
+              <Badge key={amenity.id} variant="success" dir="auto" className="gap-1">
                 <Check className="h-3 w-3" /> {amenity.name}
               </Badge>
             ))}
@@ -91,6 +91,7 @@ export function ChaletAmenitiesManager({
                   <button
                     key={amenity.id}
                     type="button"
+                    dir="auto"
                     onClick={() => toggle(amenity.id)}
                     className={cn(
                       "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
