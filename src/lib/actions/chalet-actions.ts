@@ -12,10 +12,14 @@ export async function createChaletAction(values: CreateChaletFormValues): Promis
   const session = await getSession();
   if (!session) return { success: false, message: "You must log in first." };
 
-  // A ChaletAdmin always owns the chalet they create themselves. Anyone else
-  // (SuperAdmin) must have picked an owner in the form — their own id isn't a
-  // ChaletAdmin account, so the API would reject it.
-  const ownerAdminId = session.role === "ChaletAdmin" ? session.userId : values.ownerAdminId;
+  // Only a SuperAdmin creates chalets — a ChaletAdmin only ever manages
+  // chalets that were already assigned to them. `middleware.ts` already
+  // blocks this route for anyone else; this is defense in depth.
+  if (session.role !== "SuperAdmin") {
+    return { success: false, message: "You're not authorized to create chalets." };
+  }
+
+  const ownerAdminId = values.ownerAdminId;
   if (!ownerAdminId) {
     return { success: false, message: "Choose the chalet manager (ChaletAdmin) responsible for this chalet." };
   }

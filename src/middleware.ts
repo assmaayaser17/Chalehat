@@ -42,10 +42,31 @@ export function middleware(request: NextRequest) {
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isDashboard = pathname.startsWith("/dashboard");
+  const isMyBookings = pathname.startsWith("/my-bookings");
 
   // Logged-in users shouldn't see the login/register screens again.
   if (isAuthPage && session) {
     return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+  }
+
+  if (isMyBookings) {
+    if (!session) {
+      const url = new URL("/login", request.url);
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    if (normalizeRole(session.role) === null) {
+      const url = new URL("/login", request.url);
+      url.searchParams.set("next", pathname);
+      const response = NextResponse.redirect(url);
+      response.cookies.delete(COOKIE_NAME);
+      return response;
+    }
+    // Only a Customer has bookings — every other role gets sent to their own home.
+    if (session.role !== "Customer") {
+      return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    }
+    return NextResponse.next();
   }
 
   if (!isDashboard) {
@@ -90,7 +111,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
   }
 
+  // Creating a chalet is a SuperAdmin-only action — a ChaletAdmin only ever
+  // receives chalets that were created and assigned to them, they never
+  // create their own (matches the business flow, not just an API permission).
+  if (pathname.startsWith("/dashboard/chalets/new") && !isSuperAdmin) {
+    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+  }
+
   if (pathname.startsWith("/dashboard/amenities") && !isStaffAdmin && !isSuperAdmin) {
+    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+  }
+
+  // Seasons are a shared, global concept — SuperAdmin only, unlike amenities
+  // which SystemAdmin also manages.
+  if (pathname.startsWith("/dashboard/seasons") && !isSuperAdmin) {
     return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
   }
 
@@ -98,5 +132,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/my-bookings/:path*", "/login", "/register"],
 };

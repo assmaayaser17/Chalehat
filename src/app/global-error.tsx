@@ -16,7 +16,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <AlertTriangle className="h-12 w-12 text-destructive" />
           <h1 className="text-xl font-bold text-foreground">Something went wrong</h1>
           <p className="max-w-md text-sm text-muted-foreground">
-            We're sorry for the inconvenience. Try again or go back to the home page.
+            We&apos;re sorry for the inconvenience. Try again or go back to the home page.
           </p>
           <Button onClick={reset}>Try again</Button>
         </div>

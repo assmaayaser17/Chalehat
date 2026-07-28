@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/empty-state";
 import { ROLE_LABELS_AR, type ApiUser, type UserRole } from "@/lib/api/types";
 
 const ROLE_OPTIONS: UserRole[] = ["SuperAdmin", "SystemAdmin", "ChaletAdmin"];
@@ -49,8 +51,10 @@ export function UsersByRoleTable() {
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
         </div>
       )}
 
@@ -60,7 +64,11 @@ export function UsersByRoleTable() {
         </div>
       )}
 
-      {!isLoading && !isError && (
+      {!isLoading && !isError && data && data.length === 0 && (
+        <EmptyState icon={Users} title="No users with this role" />
+      )}
+
+      {!isLoading && !isError && data && data.length > 0 && (
         <Table>
           <TableHeader>
             <TableRow>
@@ -71,24 +79,16 @@ export function UsersByRoleTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data && data.length > 0 ? (
-              data.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.fullName}</TableCell>
-                  <TableCell className="text-muted-foreground">{user.userName}</TableCell>
-                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                  <TableCell>
-                    <Badge>{ROLE_LABELS_AR[user.role] ?? user.role}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                  No users with this role.
+            {data.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.fullName}</TableCell>
+                <TableCell className="text-muted-foreground">{user.userName}</TableCell>
+                <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                <TableCell>
+                  <Badge>{ROLE_LABELS_AR[user.role] ?? user.role}</Badge>
                 </TableCell>
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       )}

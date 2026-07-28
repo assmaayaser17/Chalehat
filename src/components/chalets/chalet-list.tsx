@@ -21,7 +21,7 @@ export async function ChaletList() {
   if (failed) {
     return (
       <div className="rounded-lg border border-dashed border-border py-16 text-center text-muted-foreground">
-        Couldn't load chalets right now. Try refreshing the page in a moment.
+        Couldn&apos;t load chalets right now. Try refreshing the page in a moment.
       </div>
     );
   }

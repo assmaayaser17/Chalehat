@@ -7,6 +7,7 @@ import { Check, ImageUp, Loader2, Star, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/shared/empty-state";
 import {
   approveChaletImageAction,
   deleteChaletImageAction,
@@ -113,12 +114,15 @@ export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: num
     <div className="space-y-6">
       {error && <Alert variant="destructive">{error}</Alert>}
 
-      <form onSubmit={handleUpload} className="flex flex-wrap items-center gap-3">
+      <form
+        onSubmit={handleUpload}
+        className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-4"
+      >
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800"
+          className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 file:transition-colors hover:file:bg-primary-100"
         />
         <Button type="submit" loading={isUploading}>
           <ImageUp /> Upload image
@@ -126,15 +130,16 @@ export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: num
       </form>
 
       {images.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-          No images uploaded yet.
-        </p>
+        <EmptyState icon={ImageUp} title="No images uploaded yet" description="Upload a photo to get started." />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {images.map((image) => {
             const isPending = pendingId === image.id;
             return (
-              <div key={image.id} className="overflow-hidden rounded-lg border border-border">
+              <div
+                key={image.id}
+                className="overflow-hidden rounded-lg border border-border transition-shadow hover:shadow-md"
+              >
                 <div className="relative aspect-square bg-primary-50">
                   <Image src={image.url} alt="" fill className="object-cover" sizes="200px" />
                   <div className="absolute inset-x-2 top-2 flex flex-wrap gap-1">

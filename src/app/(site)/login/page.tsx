@@ -7,11 +7,11 @@ import { LoginForm } from "@/components/auth/login-form";
 export const metadata: Metadata = { title: "Log in" };
 
 interface PageProps {
-  searchParams: Promise<{ registered?: string }>;
+  searchParams: Promise<{ registered?: string; next?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
-  const { registered } = await searchParams;
+  const { registered, next } = await searchParams;
 
   return (
     <AuthCard
@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       description="Enter your details to access your account"
       footer={
         <>
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="font-medium text-primary hover:underline">
             Create a new account
           </Link>
@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
           Your account was created successfully — you can log in now.
         </Alert>
       )}
-      <LoginForm />
+      <LoginForm next={next} />
     </AuthCard>
   );
 }

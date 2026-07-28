@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { CalendarCheck, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -41,11 +41,19 @@ export function UserMenu({
           <p className="text-xs font-normal text-muted-foreground">{ROLE_LABELS_AR[role]}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href={dashboardHref}>
-            <LayoutDashboard /> Dashboard
-          </Link>
-        </DropdownMenuItem>
+        {role === "Customer" ? (
+          <DropdownMenuItem asChild>
+            <Link href="/my-bookings">
+              <CalendarCheck /> My Bookings
+            </Link>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild>
+            <Link href={dashboardHref}>
+              <LayoutDashboard /> Dashboard
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => logoutAction()} className="text-destructive focus:bg-destructive/10">
           <LogOut /> Log out

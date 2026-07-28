@@ -8,7 +8,7 @@ export default function NotFound() {
       <Home className="h-12 w-12 text-primary-300" />
       <h1 className="text-2xl font-bold text-foreground">Page not found</h1>
       <p className="max-w-md text-sm text-muted-foreground">
-        The page you're looking for doesn't exist or has been moved.
+        The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <Button asChild>
         <Link href="/">Back to home</Link>

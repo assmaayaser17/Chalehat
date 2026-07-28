@@ -90,6 +90,12 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const data = text ? safeJsonParse(text) : undefined;
 
   if (!res.ok) {
+    // Logged server-side (visible in the `npm run dev` terminal, not the
+    // browser) — the backend often returns an empty body on a 500, which
+    // collapses to a generic "Request failed with status N" for the user.
+    // This dumps exactly what the backend sent so a real failure can be
+    // told apart from a body-shape mismatch.
+    console.error(`[apiFetch] ${method} ${path} -> ${res.status}`, text || "(empty body)");
     throw new ApiError(res.status, extractMessage(res.status, data), data as ApiErrorBody);
   }
 

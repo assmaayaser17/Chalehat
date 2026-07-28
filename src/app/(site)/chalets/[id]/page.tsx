@@ -16,8 +16,9 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { getChaletById } from "@/lib/api/chalet";
-import { formatCurrency, getActiveBookingTypes } from "@/lib/utils";
-import { BOOKING_TYPE_FLAGS } from "@/lib/api/types";
+import { getSession } from "@/lib/auth/session";
+import { BOOKING_TYPE_LABELS, formatCurrency, getActiveBookingTypes } from "@/lib/utils";
+import { ChaletBookingWidget } from "@/components/chalets/chalet-booking-widget";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -44,16 +45,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-const bookingTypeLabels: Record<keyof typeof BOOKING_TYPE_FLAGS, string> = {
-  Daily: "Daily booking",
-  Weekend: "Weekend getaway",
-  Weekly: "Weekly booking",
-};
-
 export default async function ChaletDetailPage({ params }: PageProps) {
   const { id } = await params;
   const chalet = await loadChalet(id);
   if (!chalet) notFound();
+  const session = await getSession();
 
   const approvedImages = chalet.images?.filter((img) => img.isApproved) ?? [];
   const image = chalet.coverImageUrl ?? approvedImages[0]?.url;
@@ -101,7 +97,7 @@ export default async function ChaletDetailPage({ params }: PageProps) {
           <div className="mt-5 flex flex-wrap gap-2">
             {activeBookingTypes.map((key) => (
               <Badge key={key} variant="outline">
-                {bookingTypeLabels[key]}
+                {BOOKING_TYPE_LABELS[key]}
               </Badge>
             ))}
           </div>
@@ -110,6 +106,26 @@ export default async function ChaletDetailPage({ params }: PageProps) {
 
           <h2 className="mb-2 text-lg font-semibold text-foreground">About this chalet</h2>
           <p className="whitespace-pre-line leading-relaxed text-muted-foreground">{chalet.description}</p>
+
+          {chalet.amenities && chalet.amenities.length > 0 && (
+            <>
+              <Separator className="my-6" />
+              <h2 className="mb-3 text-lg font-semibold text-foreground">Amenities</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {chalet.amenities.map((amenity) => (
+                  <div key={amenity.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {amenity.iconUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={amenity.iconUrl} alt="" className="h-5 w-5 shrink-0" />
+                    ) : (
+                      <span className="h-5 w-5 shrink-0 rounded-full bg-primary-100" />
+                    )}
+                    {amenity.name}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           <Separator className="my-6" />
 
@@ -149,7 +165,13 @@ export default async function ChaletDetailPage({ params }: PageProps) {
                 Check-in {chalet.checkInTime.slice(0, 5)} — Check-out {chalet.checkOutTime.slice(0, 5)}
               </div>
 
-              <Button asChild className="w-full" variant="accent" size="lg">
+              <Separator />
+
+              {/* Only the role crosses the client boundary — never the session
+                  itself, which carries the access/refresh tokens. */}
+              <ChaletBookingWidget chalet={chalet} isLoggedIn={!!session} role={session?.role ?? null} />
+
+              <Button asChild className="w-full" variant="outline" size="lg">
                 <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
                   <MessageCircle /> Contact via WhatsApp
                 </a>

@@ -166,6 +166,106 @@ export interface CreateAmenityRequest {
   iconUrl: string | null;
 }
 
+// ---------- Season: /api/Season ----------
+
+/** A shared, global time period (e.g. "School holidays") — independent of any chalet. */
+export interface Season {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  priority: number;
+}
+
+export interface CreateSeasonRequest {
+  name: string;
+  startDate: string;
+  endDate: string;
+  priority: number;
+}
+
+// ---------- Chalet Seasonal Prices: /api/chalet/{id}/seasonal-prices ----------
+
+/** A season linked to one specific chalet with the price that applies during it. */
+export interface ChaletSeasonalPrice {
+  id: number;
+  seasonId: number;
+  price: number;
+}
+
+export interface LinkChaletSeasonalPriceRequest {
+  seasonId: number;
+  price: number;
+}
+
+// ---------- Chalet Weekday Prices: /api/chalet/{id}/weekday-prices ----------
+
+/**
+ * A price for specific days of the week, independent of any season.
+ * `days` uses .NET's `DayOfWeek` numbering (Sunday = 0 ... Saturday = 6),
+ * matching the "days": [4, 5] (Thu/Fri) example in the API docs.
+ * No GET or DELETE is documented for this resource yet.
+ */
+export interface CreateChaletWeekdayPriceRequest {
+  days: number[];
+  price: number;
+  priority: number;
+}
+
+// ---------- Booking: /api/Booking ----------
+
+/**
+ * One calendar day within a booking request. The API's `period` field is
+ * undocumented — every day is sent here as `3`, the same "combine everything"
+ * value the app's other bitmask fields use for "all/full" (mirrors
+ * `BOOKING_TYPE_FLAGS`'s pattern). Confirm the real meaning with the backend
+ * before this is treated as final; see `buildBookingDays` in `lib/utils.ts`.
+ */
+export interface BookingDayInput {
+  date: string;
+  period: number;
+}
+
+export interface PreviewBookingRequest {
+  chaletId: number;
+  bookingType: number;
+  childrenCount: number;
+  notes: string;
+  days: BookingDayInput[];
+}
+
+export type CreateBookingRequest = PreviewBookingRequest;
+
+/** Response shape is undocumented — read defensively, see `previewBooking`. */
+export interface BookingPreview {
+  totalPrice?: number;
+  [key: string]: unknown;
+}
+
+/** Response shape is undocumented — every field beyond `id`/`status` is read defensively. */
+export interface Booking {
+  id: number;
+  chaletId: number;
+  chaletName?: string;
+  userId?: string;
+  customerName?: string;
+  bookingType?: number | string;
+  status: string;
+  childrenCount?: number;
+  notes?: string;
+  totalPrice?: number;
+  createdAt?: string;
+  days?: { date: string; period: number }[];
+}
+
+export interface ApproveBookingRequest {
+  refundWindowHours: number;
+}
+
+export interface RejectBookingRequest {
+  reason: string;
+}
+
 // ---------- Generic API envelope ----------
 
 export interface ApiErrorBody {

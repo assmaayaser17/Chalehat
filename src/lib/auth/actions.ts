@@ -33,13 +33,15 @@ function homeForRole(role: string | undefined) {
   return "/dashboard";
 }
 
-export async function loginAction(values: LoginFormValues): Promise<ActionResult> {
+export async function loginAction(values: LoginFormValues, next?: string): Promise<ActionResult> {
   let target: string;
   try {
     const tokens = await loginUser({ Identifier: values.identifier, password: values.password });
     const session = buildSession(tokens);
     await setSession(session);
-    target = homeForRole(session.role);
+    // Only honor a same-site relative path (never a full URL) to avoid an
+    // open redirect via a crafted `next` query param.
+    target = next && next.startsWith("/") && !next.startsWith("//") ? next : homeForRole(session.role);
   } catch (err) {
     if (err instanceof ApiError) return { success: false, message: err.message };
     // Logged server-side (visible in your `npm run dev` terminal) — anything

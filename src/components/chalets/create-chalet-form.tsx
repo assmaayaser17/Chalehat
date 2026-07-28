@@ -82,7 +82,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
         </section>
       )}
 
-      <section className="space-y-4 border-t border-border pt-6">
+      <section className="space-y-4 border-t border-border pt-8">
         <h2 className="text-sm font-semibold text-primary-700">Basic information</h2>
         <FormField id="name" label="Chalet name" error={errors.name?.message}>
           <Input id="name" {...register("name")} />
@@ -103,7 +103,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
         </div>
       </section>
 
-      <section className="space-y-4 border-t border-border pt-6">
+      <section className="space-y-4 border-t border-border pt-8">
         <h2 className="text-sm font-semibold text-primary-700">Capacity & details</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <FormField id="maxGuests" label="Max guests" error={errors.maxGuests?.message}>
@@ -130,7 +130,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
         </div>
       </section>
 
-      <section className="space-y-4 border-t border-border pt-6">
+      <section className="space-y-4 border-t border-border pt-8">
         <h2 className="text-sm font-semibold text-primary-700">Booking & stay</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <FormField id="minNights" label="Min nights" error={errors.minNights?.message}>
@@ -156,7 +156,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
         </FormField>
       </section>
 
-      <section className="space-y-4 border-t border-border pt-6">
+      <section className="space-y-4 border-t border-border pt-8">
         <h2 className="text-sm font-semibold text-primary-700">Contact & policies</h2>
         <FormField id="whatsAppNumber" label="WhatsApp number" error={errors.whatsAppNumber?.message}>
           <Input id="whatsAppNumber" placeholder="0591234567" {...register("whatsAppNumber")} />

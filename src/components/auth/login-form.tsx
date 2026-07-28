@@ -16,7 +16,7 @@ import { Alert } from "@/components/ui/alert";
  * directly from `onSubmit` — validation happens twice (here for instant UX,
  * again inside the action as defense in depth).
  */
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string } = {}) {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const {
     register,
@@ -26,7 +26,7 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
-    const result = await loginAction(values);
+    const result = await loginAction(values, next);
     // A successful login calls redirect() inside the action, which never
     // resolves back here — so reaching this line always means failure.
     if (!result.success) setServerError(result.message);
