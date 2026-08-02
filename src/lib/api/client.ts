@@ -3,7 +3,7 @@ import "server-only";
 import { buildSession, clearSession, getSession, isAccessTokenExpired, setSession } from "@/lib/auth/session";
 import type { ApiErrorBody, AuthTokenResponse } from "@/lib/api/types";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://chalehat.onrender.com";
+const API_BASE_URL = process.env.API_BASE_URL || "https://chalehat.onrender.com";
 
 /**
  * Resolves a media path returned by the API into an absolute, reachable URL.
@@ -116,15 +116,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * The API wraps every response as `{ success, message: <payload> }` (occasionally
- * `data`/`result`/`items` instead of `message`). These two helpers unwrap that
- * envelope for list and single-object payloads respectively, so each resource
- * module doesn't have to re-implement the same unwrapping logic.
+ * `data`/`result`/`items` instead of `message`). Some list endpoints (e.g. Chalet)
+ * additionally paginate, nesting the array one level deeper as
+ * `{ success, message: { items: [...], totalCount, page, pageSize, totalPages } }`.
+ * These two helpers unwrap both shapes for list and single-object payloads
+ * respectively, so each resource module doesn't have to re-implement this.
  */
 export function unwrapList<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[];
   if (isRecord(data)) {
     for (const key of ["message", "items", "data", "result"]) {
-      if (Array.isArray(data[key])) return data[key] as T[];
+      const value = data[key];
+      if (Array.isArray(value)) return value as T[];
+      if (isRecord(value) && Array.isArray(value.items)) return value.items as T[];
     }
   }
   return [];

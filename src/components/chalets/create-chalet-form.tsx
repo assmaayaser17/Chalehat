@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookingTypesField } from "@/components/chalets/booking-types-field";
-import { BOOKING_TYPE_FLAGS, type ApiUser } from "@/lib/api/types";
+import type { ApiUser } from "@/lib/api/types";
 
 /**
  * Client Component: a large react-hook-form instance, so the whole form has
@@ -42,7 +42,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
       maxNights: 7,
       checkInTime: "15:00",
       checkOutTime: "12:00",
-      allowedBookingTypes: BOOKING_TYPE_FLAGS.Daily | BOOKING_TYPE_FLAGS.Weekend,
+      allowedBookingTypes: ["Family", "Youth"],
     },
   });
 
@@ -117,6 +117,15 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
           </FormField>
           <FormField id="basePrice" label="Base price" error={errors.basePrice?.message}>
             <Input id="basePrice" type="number" {...register("basePrice")} />
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField id="morningPrice" label="Morning price" error={errors.morningPrice?.message}>
+            <Input id="morningPrice" type="number" {...register("morningPrice")} />
+          </FormField>
+          <FormField id="eveningPrice" label="Evening price" error={errors.eveningPrice?.message}>
+            <Input id="eveningPrice" type="number" {...register("eveningPrice")} />
           </FormField>
         </div>
 

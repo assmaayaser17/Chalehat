@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { BOOKING_TYPE_FLAGS, type BookingDayInput } from "@/lib/api/types";
+import { BOOKING_TYPES, type BookingDayInput, type BookingType } from "@/lib/api/types";
 
 /**
  * Merges Tailwind class names, resolving conflicts (last one wins).
@@ -29,28 +29,24 @@ export function formatDate(value: string | Date) {
   }).format(date);
 }
 
-type BookingTypeKey = keyof typeof BOOKING_TYPE_FLAGS;
-const BOOKING_TYPE_KEYS = Object.keys(BOOKING_TYPE_FLAGS) as BookingTypeKey[];
-
 /** Shared with the booking form so the type a customer picks matches the badges shown on the chalet page. */
-export const BOOKING_TYPE_LABELS: Record<BookingTypeKey, string> = {
-  Daily: "Daily booking",
-  Weekend: "Weekend getaway",
-  Weekly: "Weekly booking",
+export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
+  Family: "Family",
+  Youth: "Youth",
+  Event: "Event",
 };
 
 /**
- * Resolves the booking types a chalet accepts. The API sends this field as a
- * bitmask number on create ("POST /Chalet") but as a label string like "All"
- * or "Daily,Weekend" when reading a chalet back — this reads either shape.
+ * Resolves the booking types a chalet accepts. Create sends this field as a
+ * `BookingType[]`; reads may come back as that same array, a label string
+ * like "All", or a comma-separated string ("Family,Youth") — this handles
+ * all three shapes.
  */
-export function getActiveBookingTypes(value: number | string): BookingTypeKey[] {
-  if (typeof value === "string") {
-    if (value === "All") return [...BOOKING_TYPE_KEYS];
-    const requested = new Set(value.split(",").map((part) => part.trim()));
-    return BOOKING_TYPE_KEYS.filter((key) => requested.has(key));
-  }
-  return BOOKING_TYPE_KEYS.filter((key) => (value & BOOKING_TYPE_FLAGS[key]) !== 0);
+export function getActiveBookingTypes(value: BookingType[] | string): BookingType[] {
+  if (Array.isArray(value)) return value;
+  if (value === "All") return [...BOOKING_TYPES];
+  const requested = new Set(value.split(",").map((part) => part.trim()));
+  return BOOKING_TYPES.filter((key) => requested.has(key));
 }
 
 /**

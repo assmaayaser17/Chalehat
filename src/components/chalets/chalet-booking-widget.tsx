@@ -12,7 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { previewBookingAction, createBookingAction } from "@/lib/actions/booking-actions";
 import { BOOKING_TYPE_LABELS, buildBookingDays, formatCurrency, getActiveBookingTypes } from "@/lib/utils";
-import { BOOKING_TYPE_FLAGS, type BookingPreview, type Chalet, type UserRole } from "@/lib/api/types";
+import type { BookingPreview, BookingType, Chalet, UserRole } from "@/lib/api/types";
 
 /** Best-effort read of a total price out of the undocumented preview response shape. */
 function readTotalPrice(preview: BookingPreview): number | null {
@@ -46,9 +46,7 @@ export function ChaletBookingWidget({
   const firstActiveType = activeTypes[0];
   const [checkIn, setCheckIn] = React.useState("");
   const [checkOut, setCheckOut] = React.useState("");
-  const [bookingType, setBookingType] = React.useState<string>(
-    firstActiveType ? String(BOOKING_TYPE_FLAGS[firstActiveType]) : "",
-  );
+  const [bookingType, setBookingType] = React.useState<BookingType | "">(firstActiveType ?? "");
   const [childrenCount, setChildrenCount] = React.useState("0");
   const [notes, setNotes] = React.useState("");
 
@@ -64,7 +62,7 @@ export function ChaletBookingWidget({
   function buildRequest() {
     return {
       chaletId: chalet.id,
-      bookingType: Number(bookingType),
+      bookingType: bookingType as BookingType,
       childrenCount: Number(childrenCount) || 0,
       notes,
       days: buildBookingDays(checkIn, checkOut),
@@ -167,7 +165,7 @@ export function ChaletBookingWidget({
           <Select
             value={bookingType}
             onValueChange={(value) => {
-              setBookingType(value);
+              setBookingType(value as BookingType);
               setPreview(null);
             }}
           >
@@ -176,7 +174,7 @@ export function ChaletBookingWidget({
             </SelectTrigger>
             <SelectContent>
               {activeTypes.map((key) => (
-                <SelectItem key={key} value={String(BOOKING_TYPE_FLAGS[key])}>
+                <SelectItem key={key} value={key}>
                   {BOOKING_TYPE_LABELS[key]}
                 </SelectItem>
               ))}

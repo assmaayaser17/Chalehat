@@ -1,25 +1,35 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { BOOKING_TYPE_FLAGS } from "@/lib/api/types";
+import { BOOKING_TYPES, type BookingType } from "@/lib/api/types";
 
-const OPTIONS: { flag: number; label: string }[] = [
-  { flag: BOOKING_TYPE_FLAGS.Daily, label: "Daily" },
-  { flag: BOOKING_TYPE_FLAGS.Weekend, label: "Weekend" },
-  { flag: BOOKING_TYPE_FLAGS.Weekly, label: "Weekly" },
-];
+const LABELS: Record<BookingType, string> = {
+  Family: "Family",
+  Youth: "Youth",
+  Event: "Event",
+};
 
-/** Toggle-chip group that packs the three booking types into the `allowedBookingTypes` bitmask the API expects. */
-export function BookingTypesField({ value, onChange }: { value: number; onChange: (next: number) => void }) {
+/** Toggle-chip group that builds the `allowedBookingTypes` string array the API expects. */
+export function BookingTypesField({
+  value,
+  onChange,
+}: {
+  value: BookingType[];
+  onChange: (next: BookingType[]) => void;
+}) {
+  function toggle(type: BookingType) {
+    onChange(value.includes(type) ? value.filter((t) => t !== type) : [...value, type]);
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
-      {OPTIONS.map((opt) => {
-        const active = (value & opt.flag) !== 0;
+      {BOOKING_TYPES.map((type) => {
+        const active = value.includes(type);
         return (
           <button
-            key={opt.flag}
+            key={type}
             type="button"
-            onClick={() => onChange(active ? value & ~opt.flag : value | opt.flag)}
+            onClick={() => toggle(type)}
             className={cn(
               "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
               active
@@ -27,7 +37,7 @@ export function BookingTypesField({ value, onChange }: { value: number; onChange
                 : "border-input text-muted-foreground hover:bg-muted",
             )}
           >
-            {opt.label}
+            {LABELS[type]}
           </button>
         );
       })}

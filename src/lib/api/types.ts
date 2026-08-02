@@ -118,12 +118,14 @@ export interface ApiUser {
 
 // ---------- Chalet: /api/Chalet ----------
 
-/** Bitmask of accepted booking types — kept as a number to match the API's `allowedBookingTypes`. */
-export const BOOKING_TYPE_FLAGS = {
-  Daily: 1,
-  Weekend: 2,
-  Weekly: 4,
-} as const;
+/**
+ * The chalet booking-purpose enum, sent/received as an array of these string
+ * names (e.g. `["Family", "Youth"]`) — NOT a numeric bitmask, despite the
+ * backend's own C# enum being flag-shaped internally (Family=1/Youth=2/
+ * Event=4). Confirmed from an actual accepted create-chalet payload.
+ */
+export const BOOKING_TYPES = ["Family", "Youth", "Event"] as const;
+export type BookingType = (typeof BOOKING_TYPES)[number];
 
 export interface CreateChaletRequest {
   name: string;
@@ -132,6 +134,8 @@ export interface CreateChaletRequest {
   latitude: number;
   longitude: number;
   basePrice: number;
+  morningPrice: number;
+  eveningPrice: number;
   showPrice: boolean;
   maxGuests: number;
   bedroomsCount: number;
@@ -142,14 +146,14 @@ export interface CreateChaletRequest {
   checkOutTime: string;
   cancellationPolicy: string;
   whatsAppNumber: string;
-  allowedBookingTypes: number;
+  allowedBookingTypes: BookingType[];
   ownerAdminId: string;
 }
 
 export interface Chalet extends Omit<CreateChaletRequest, "allowedBookingTypes"> {
   id: number;
-  /** The API sends this as a bitmask number on create but as a label string (e.g. "All") on read. */
-  allowedBookingTypes: number | string;
+  /** Read back as an array of names, a comma-separated string, or "All" — resolved via `getActiveBookingTypes`. */
+  allowedBookingTypes: BookingType[] | string;
   status?: string;
   ownerAdminName?: string;
   createdAt?: string;
@@ -234,19 +238,25 @@ export interface CreateChaletWeekdayPriceRequest {
 
 /**
  * One calendar day within a booking request. The API's `period` field is
- * undocumented — every day is sent here as `3`, the same "combine everything"
- * value the app's other bitmask fields use for "all/full" (mirrors
- * `BOOKING_TYPE_FLAGS`'s pattern). Confirm the real meaning with the backend
- * before this is treated as final; see `buildBookingDays` in `lib/utils.ts`.
+ * undocumented — every day is sent here as `3`, an assumed "full day" value.
+ * Confirm the real meaning with the backend before this is treated as final;
+ * see `buildBookingDays` in `lib/utils.ts`.
  */
 export interface BookingDayInput {
   date: string;
   period: number;
 }
 
+/**
+ * `bookingType` — inferred to be a `BookingType` string (e.g. "Family"), not
+ * a number, for consistency with `Chalet.allowedBookingTypes` now that it's
+ * confirmed to be string-enum-based rather than a numeric bitmask. Not
+ * independently confirmed against this specific endpoint — verify with the
+ * backend if bookings start failing the same way chalet creation did.
+ */
 export interface PreviewBookingRequest {
   chaletId: number;
-  bookingType: number;
+  bookingType: BookingType;
   childrenCount: number;
   notes: string;
   days: BookingDayInput[];
@@ -267,7 +277,7 @@ export interface Booking {
   chaletName?: string;
   userId?: string;
   customerName?: string;
-  bookingType?: number | string;
+  bookingType?: BookingType | string;
   status: string;
   childrenCount?: number;
   notes?: string;
