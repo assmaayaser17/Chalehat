@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Check, Loader2, Pencil, Sparkles, Trash2, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,9 +72,9 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Icon</TableHead>
-            <TableHead className="w-24" />
+            <TableHead>Amenity</TableHead>
+            <TableHead>Icon URL</TableHead>
+            <TableHead className="w-24 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -88,7 +88,17 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                     {isEditing ? (
                       <Input dir="auto" value={editName} onChange={(e) => setEditName(e.target.value)} />
                     ) : (
-                      <span dir="auto">{amenity.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-100 text-accent-700">
+                          {amenity.iconUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- icon URLs come from arbitrary admin-entered hosts, not our media backend
+                            <img src={amenity.iconUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                        </span>
+                        <span dir="auto">{amenity.name}</span>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -103,7 +113,7 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                       {isEditing ? (
                         <>
                           <Button
@@ -114,7 +124,7 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                             disabled={isPending}
                             onClick={() => handleSave(amenity.id)}
                           >
-                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 text-success" />}
                           </Button>
                           <Button
                             type="button"
@@ -137,7 +147,7 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                             disabled={pendingId !== null}
                             onClick={() => startEdit(amenity)}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-4 w-4 text-primary-700" />
                           </Button>
                           <Button
                             type="button"

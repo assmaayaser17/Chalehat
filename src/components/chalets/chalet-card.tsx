@@ -4,7 +4,7 @@ import { Bath, BedDouble, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatItem } from "@/components/shared/stat-item";
-import { formatCurrency } from "@/lib/utils";
+import { BOOKING_TYPE_LABELS, formatCurrency, getActiveBookingTypes } from "@/lib/utils";
 import type { Chalet } from "@/lib/api/types";
 
 /** Pure presentation — stays a Server Component; used on the public listing and the ChaletAdmin dashboard. */
@@ -12,6 +12,7 @@ export function ChaletCard({ chalet, href }: { chalet: Chalet; href?: string }) 
   const link = href ?? `/chalets/${chalet.id}`;
   const image = chalet.coverImageUrl ?? chalet.images?.find((img) => img.isApproved)?.url;
   const isInactive = chalet.status && chalet.status !== "Active";
+  const activeBookingTypes = getActiveBookingTypes(chalet.allowedBookingTypes);
 
   return (
     <Card className="group overflow-hidden transition-shadow hover:shadow-md">
@@ -23,7 +24,7 @@ export function ChaletCard({ chalet, href }: { chalet: Chalet; href?: string }) 
               alt={chalet.name}
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-primary-300">
@@ -38,40 +39,40 @@ export function ChaletCard({ chalet, href }: { chalet: Chalet; href?: string }) 
               </svg>
             </div>
           )}
-          <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-            {isInactive ? (
+          <div className="absolute inset-x-3 top-3 flex flex-wrap items-start gap-1.5">
+            {isInactive && (
               <Badge variant="destructive" className="shadow-sm">
                 Inactive
               </Badge>
-            ) : (
-              <span />
             )}
-            {chalet.showPrice && (
-              <Badge variant="accent" className="shadow-sm">
-                {formatCurrency(chalet.basePrice)} / night
+            {activeBookingTypes.map((type) => (
+              <Badge key={type} className="bg-white/90 text-primary-800 shadow-sm backdrop-blur-sm">
+                {BOOKING_TYPE_LABELS[type]}
               </Badge>
-            )}
+            ))}
           </div>
         </div>
       </Link>
-      <CardContent className="space-y-2.5 p-4">
-        <Link href={link}>
-          <h3
-            dir="auto"
-            className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary"
-          >
-            {chalet.name}
-          </h3>
-        </Link>
+      <CardContent className="space-y-3 p-4">
+        <div dir="auto" className="flex items-start justify-between gap-3">
+          <Link href={link} className="min-w-0">
+            <h3 className="line-clamp-1 font-semibold text-primary-800 transition-colors group-hover:text-primary-700">
+              {chalet.name}
+            </h3>
+          </Link>
+          {chalet.showPrice && (
+            <div className="shrink-0 text-end">
+              <p className="text-lg font-bold tabular-nums text-accent-700">{formatCurrency(chalet.basePrice)}</p>
+              <p className="text-[11px] text-muted-foreground">/ night</p>
+            </div>
+          )}
+        </div>
+
         <p dir="auto" className="line-clamp-1 flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           {chalet.address}
         </p>
-        {chalet.description && (
-          <p dir="auto" className="line-clamp-2 text-sm text-muted-foreground">
-            {chalet.description}
-          </p>
-        )}
+
         <div className="grid grid-cols-3 divide-x divide-border rtl:divide-x-reverse border-t border-border pt-3">
           <StatItem icon={Users} value={chalet.maxGuests} label="Guests" />
           <StatItem icon={BedDouble} value={chalet.bedroomsCount} label="Rooms" className="ps-3" />

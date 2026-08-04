@@ -1,7 +1,7 @@
 import "server-only";
 
 import { buildSession, clearSession, getSession, isAccessTokenExpired, setSession } from "@/lib/auth/session";
-import type { ApiErrorBody, AuthTokenResponse } from "@/lib/api/types";
+import type { ApiErrorBody, AuthTokenResponse, PaginatedResult } from "@/lib/api/types";
 
 const API_BASE_URL = process.env.API_BASE_URL || "https://chalehat.onrender.com";
 
@@ -134,6 +134,32 @@ export function unwrapList<T>(data: unknown): T[] {
   return [];
 }
 
+/**
+ * Unwraps a paginated list response, keeping `totalCount`/`page`/`pageSize`/
+ * `totalPages` instead of discarding them like `unwrapList` does. Falls back
+ * to treating a flat (non-paginated) array as a single full page, so callers
+ * don't break if a given endpoint isn't actually paginated.
+ */
+export function unwrapPaginated<T>(data: unknown): PaginatedResult<T> {
+  if (isRecord(data)) {
+    for (const key of ["message", "data", "result"]) {
+      const value = data[key];
+      if (isRecord(value) && Array.isArray(value.items)) {
+        const items = value.items as T[];
+        return {
+          items,
+          totalCount: typeof value.totalCount === "number" ? value.totalCount : items.length,
+          page: typeof value.page === "number" ? value.page : 1,
+          pageSize: typeof value.pageSize === "number" ? value.pageSize : items.length,
+          totalPages: typeof value.totalPages === "number" ? value.totalPages : 1,
+        };
+      }
+    }
+  }
+  const items = unwrapList<T>(data);
+  return { items, totalCount: items.length, page: 1, pageSize: items.length || 1, totalPages: 1 };
+}
+
 /** Unwraps a single-object response. Assumes the payload itself is the object once it has an `id` field. */
 export function unwrapObject<T>(data: unknown): T {
   if (isRecord(data) && !("id" in data)) {
@@ -181,9 +207,79 @@ export async function authFetch<T>(path: string, options: RequestOptions = {}): 
   }
 }
 
+/**
+ * Deduplicates refresh attempts for the same refresh token, and — crucially
+ * — keeps the *resolved* result around for a short grace window afterward.
+ * The backend rotates refresh tokens on use (invalidating the old one). Two
+ * gaps this closes:
+ *
+ * 1. Truly concurrent callers (e.g. a page's own `Promise.all`/
+ *    `Promise.allSettled` of several authenticated reads, or a concurrent
+ *    middleware invocation) that all see the same expired access token at
+ *    once — without dedup they'd each independently POST /api/Auth/refresh
+ *    with the same stale token.
+ * 2. A request that arrives moments *after* an earlier refresh already
+ *    completed, but whose own cookie read still has the pre-refresh value —
+ *    the browser only applies a Set-Cookie once that response is processed,
+ *    so a background request (e.g. Next.js `<Link>` prefetching another
+ *    route) fired just before that can still carry the now-rotated token.
+ *    Deleting the cache entry the instant the promise settles (as an
+ *    in-flight-only dedup would) reopens this window; keeping it for a few
+ *    seconds after resolution lets that straggler reuse the same result
+ *    instead of re-presenting a dead token and tripping reuse-detection.
+ *
+ * Either way, the backend would otherwise treat the reused token as theft
+ * and revoke the *entire* session — logging the user out with a "security
+ * alert" even though nothing was actually wrong. Keyed by the refresh token
+ * itself so unrelated sessions never share a slot; failed attempts are
+ * evicted immediately instead of cached, so a genuinely dead session doesn't
+ * get stuck retrying the same failure for the grace window.
+ *
+ * Deliberately touches no cookies — safe to call from anywhere (middleware,
+ * Server Components/Actions, Route Handlers). `middleware.ts` calls this
+ * directly and persists the result itself via `NextResponse` cookies (the
+ * only context that reliably can — see `tryRefresh` below); everyone else
+ * goes through `tryRefresh`.
+ */
+const refreshCache = new Map<string, Promise<AuthTokenResponse>>();
+const REFRESH_CACHE_GRACE_MS = 10_000;
+
+export async function refreshTokensDeduped(refreshToken: string): Promise<AuthTokenResponse> {
+  let pending = refreshCache.get(refreshToken);
+  if (!pending) {
+    pending = refreshTokens(refreshToken);
+    refreshCache.set(refreshToken, pending);
+    pending.then(
+      () => setTimeout(() => refreshCache.delete(refreshToken), REFRESH_CACHE_GRACE_MS),
+      () => refreshCache.delete(refreshToken),
+    );
+  }
+  return pending;
+}
+
+/**
+ * Refreshes and persists the session cookie — only actually works when
+ * called from a Server Action or Route Handler. Next.js forbids
+ * `cookies().set()`/`.delete()` during a plain Server Component render, so
+ * when `authFetch` is invoked from a page's own data-fetching (not an
+ * action), this persistence step is unreachable in practice: `middleware.ts`
+ * now refreshes proactively before the request ever reaches the page, so by
+ * the time a Server Component runs, `getSession()` already returns a
+ * current token and this function's proactive branch is never exercised —
+ * it only remains as a fallback for the reactive (401-retry) path and for
+ * calls genuinely made from Server Actions.
+ */
 async function tryRefresh(refreshToken: string): Promise<string> {
   try {
-    const tokens = await refreshTokens(refreshToken);
+    // Note: does not evict `refreshCache` on failure here — the underlying
+    // network call inside `refreshTokensDeduped` may have actually
+    // succeeded, with the failure being `setSession`'s cookie write (e.g.
+    // called from a context that can't persist it, see this function's doc
+    // comment). Evicting a genuinely successful, still-reusable result
+    // would reopen the exact reuse race this cache exists to close for any
+    // other caller sharing it. `refreshTokensDeduped` already manages its
+    // own cache lifecycle based on the real network outcome.
+    const tokens = await refreshTokensDeduped(refreshToken);
     const session = buildSession(tokens);
     await setSession(session);
     return session.accessToken;

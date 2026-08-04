@@ -6,11 +6,23 @@ import { AlertTriangle, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ROLE_LABELS_AR, type ApiUser, type UserRole } from "@/lib/api/types";
 
 const ROLE_OPTIONS: UserRole[] = ["SuperAdmin", "SystemAdmin", "ChaletAdmin"];
+
+/** First letters of up to the first two words of a full name, for the avatar fallback. */
+function initials(fullName: string): string {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
 
 async function fetchUsersByRole(role: UserRole): Promise<ApiUser[]> {
   const res = await fetch(`/api/admin/users?role=${role}`, { cache: "no-store" });
@@ -72,22 +84,31 @@ export function UsersByRoleTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>Staff Name</TableHead>
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Access Role</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.map((user) => (
               <TableRow key={user.id}>
-                <TableCell dir="auto" className="font-medium">
-                  {user.fullName}
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="bg-primary-100 text-primary-800">
+                        {initials(user.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span dir="auto" className="font-semibold text-foreground">
+                      {user.fullName}
+                    </span>
+                  </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{user.userName}</TableCell>
+                <TableCell className="text-muted-foreground">@{user.userName}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>
-                  <Badge>{ROLE_LABELS_AR[user.role] ?? user.role}</Badge>
+                  <Badge variant="accent">{ROLE_LABELS_AR[user.role] ?? user.role}</Badge>
                 </TableCell>
               </TableRow>
             ))}

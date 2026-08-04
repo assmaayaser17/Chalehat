@@ -36,6 +36,9 @@ export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
   Event: "Event",
 };
 
+/** .NET `DayOfWeek` numbering (Sunday = 0 ... Saturday = 6) — used to build the weekday-price create request. */
+export const WEEKDAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+
 /**
  * Resolves the booking types a chalet accepts. Create sends this field as a
  * `BookingType[]`; reads may come back as that same array, a label string

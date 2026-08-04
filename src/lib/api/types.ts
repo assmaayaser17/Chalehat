@@ -35,6 +35,24 @@ export interface RegisterRequest {
   confirmPassword: string;
 }
 
+/**
+ * POST /api/Auth/register's response — confirmed via a live call:
+ * `{success, message: {userId, message}}`. A verification SMS is sent
+ * immediately on register, and `POST /api/Auth/login` rejects the account
+ * (`"You must verify your phone number before logging in."`) until
+ * `verifyOtp` succeeds — also confirmed live.
+ */
+export interface RegisterResponse {
+  userId?: string;
+  message?: string;
+}
+
+/** POST /api/Auth/verify-otp — no auth required. */
+export interface VerifyOtpRequest {
+  userId: string;
+  code: string;
+}
+
 export interface LoginRequest {
   Identifier: string;
   password: string;
@@ -150,10 +168,12 @@ export interface CreateChaletRequest {
   ownerAdminId: string;
 }
 
-export interface Chalet extends Omit<CreateChaletRequest, "allowedBookingTypes"> {
+export interface Chalet extends Omit<CreateChaletRequest, "allowedBookingTypes" | "whatsAppNumber"> {
   id: number;
   /** Read back as an array of names, a comma-separated string, or "All" — resolved via `getActiveBookingTypes`. */
   allowedBookingTypes: BookingType[] | string;
+  /** Confirmed via a live call: null for some real chalets, despite being required on create. Never call `.replace()`/etc without a null check. */
+  whatsAppNumber: string | null;
   status?: string;
   ownerAdminName?: string;
   createdAt?: string;
@@ -161,6 +181,10 @@ export interface Chalet extends Omit<CreateChaletRequest, "allowedBookingTypes">
   coverImageUrl?: string | null;
   images?: ChaletImage[];
   amenities?: Amenity[];
+  /** Only approved reviews count toward these — confirmed via a live call. */
+  averageRating?: number | null;
+  reviewsCount?: number;
+  reviews?: ChaletReview[];
 }
 
 // ---------- Chalet Images: /api/chalet/{id}/images ----------
@@ -208,29 +232,63 @@ export interface CreateSeasonRequest {
 
 // ---------- Chalet Seasonal Prices: /api/chalet/{id}/seasonal-prices ----------
 
-/** A season linked to one specific chalet with the price that applies during it. */
+/**
+ * A season linked to one specific chalet with the prices that apply during
+ * it — confirmed empirically via GET: the response embeds the season's own
+ * `seasonName`/`seasonStartDate`/`seasonEndDate` directly (no separate
+ * `/api/Season` lookup needed to display it), and prices follow the same
+ * morning/evening/full-day split as weekday prices, not a single `price`.
+ */
 export interface ChaletSeasonalPrice {
   id: number;
+  chaletId?: number;
   seasonId: number;
-  price: number;
+  seasonName?: string;
+  seasonStartDate?: string;
+  seasonEndDate?: string;
+  morningPrice: number;
+  eveningPrice: number;
+  fullDayPrice: number;
 }
 
 export interface LinkChaletSeasonalPriceRequest {
   seasonId: number;
-  price: number;
+  morningPrice: number;
+  eveningPrice: number;
+  fullDayPrice: number;
 }
 
 // ---------- Chalet Weekday Prices: /api/chalet/{id}/weekday-prices ----------
 
 /**
- * A price for specific days of the week, independent of any season.
- * `days` uses .NET's `DayOfWeek` numbering (Sunday = 0 ... Saturday = 6),
- * matching the "days": [4, 5] (Thu/Fri) example in the API docs.
- * No GET or DELETE is documented for this resource yet.
+ * A price for specific days of the week, independent of any season. `days`
+ * uses .NET's `DayOfWeek` numbering (Sunday = 0 ... Saturday = 6) and fans
+ * out into one row per day server-side — confirmed empirically: a create
+ * request with `days: [0, 1]` produced two separate GET rows, one for
+ * Sunday and one for Monday. Per-period prices mirror the chalet's own
+ * morning/evening pricing model, plus a `fullDayPrice` flat rate.
  */
 export interface CreateChaletWeekdayPriceRequest {
   days: number[];
-  price: number;
+  morningPrice: number;
+  eveningPrice: number;
+  fullDayPrice: number;
+  priority: number;
+}
+
+/**
+ * GET /api/chalet/{id}/weekday-prices — confirmed to exist despite not
+ * being documented in the Postman collection. One row per day (not the
+ * `days: number[]` array the create request fans out from) — `day` is the
+ * weekday's full English name (e.g. "Sunday").
+ */
+export interface ChaletWeekdayPrice {
+  id: number;
+  chaletId?: number;
+  day: string;
+  morningPrice: number;
+  eveningPrice: number;
+  fullDayPrice: number;
   priority: number;
 }
 
@@ -270,12 +328,22 @@ export interface BookingPreview {
   [key: string]: unknown;
 }
 
-/** Response shape is undocumented — every field beyond `id`/`status` is read defensively. */
+/**
+ * Response shape is undocumented — every field beyond `id`/`status` is read
+ * defensively. Confirmed via a live call against `GET /api/Booking/chalet/{id}`
+ * that the customer name field is `userFullName` (often an empty string, not
+ * omitted), not `customerName` — `customerName` is kept as a fallback in case
+ * some other endpoint variant uses it. `days` is also confirmed to come back
+ * as an empty array on this endpoint even for real Confirmed bookings — the
+ * per-day breakdown only actually shows up in the chalet's calendar endpoint,
+ * see `buildBookingDatesById`.
+ */
 export interface Booking {
   id: number;
   chaletId: number;
   chaletName?: string;
   userId?: string;
+  userFullName?: string;
   customerName?: string;
   bookingType?: BookingType | string;
   status: string;
@@ -284,6 +352,10 @@ export interface Booking {
   totalPrice?: number;
   createdAt?: string;
   days?: { date: string; period: number }[];
+  isPaid?: boolean;
+  paidAmount?: number;
+  paymentMethod?: string;
+  rejectionReason?: string;
 }
 
 export interface ApproveBookingRequest {
@@ -294,7 +366,215 @@ export interface RejectBookingRequest {
   reason: string;
 }
 
+/** POST /api/Booking/{id}/pay — records a (possibly partial) cash/manual payment against a booking. */
+export interface RecordBookingPaymentRequest {
+  amount: number;
+  paymentMethod: string;
+}
+
+/**
+ * GET /api/Booking/customer/{id}/balance — not in the Postman collection's
+ * documented examples, and the bearer token attached to it had already
+ * expired by the time this was built, so the exact response shape couldn't
+ * be confirmed against a live call. Every field is optional and rendered
+ * only if present — see `CustomerBalanceCard`.
+ */
+export interface CustomerBalance {
+  totalOwed?: number;
+  totalPaid?: number;
+  balance?: number;
+  [key: string]: unknown;
+}
+
+/**
+ * GET /api/Booking/chalet/{id}/calendar — confirmed via a live call. Each
+ * day carries a `slots` array (not a single flag) since a chalet can have
+ * more than one period booked the same day (e.g. Morning + Evening) — a day
+ * is booked whenever `slots.length > 0`. `period` on a slot is inconsistent
+ * in the wild: some bookings show `"FullDay"/"Morning"/"Evening"`, older
+ * ones show a bare numeric string like `"3"` — never assume one or the
+ * other.
+ */
+export interface ChaletCalendarSlot {
+  bookingId?: number;
+  period?: string;
+  status?: string;
+  colorCode?: string;
+  customerName?: string;
+  [key: string]: unknown;
+}
+
+export interface ChaletCalendarDay {
+  date: string;
+  slots?: ChaletCalendarSlot[];
+  [key: string]: unknown;
+}
+
+// ---------- Statistics: /api/statistics ----------
+
+export interface ChaletStatisticsMonthlyBreakdown {
+  year?: number;
+  month?: number;
+  monthLabel?: string;
+  bookingsCount?: number;
+  revenue?: number;
+}
+
+export interface ChaletStatisticsBookingTypeBreakdown {
+  bookingType?: string;
+  bookingsCount?: number;
+  revenue?: number;
+}
+
+export interface ChaletStatisticsPaymentMethodBreakdown {
+  paymentMethod?: string;
+  paymentType?: string | null;
+  bookingsCount?: number;
+  revenue?: number;
+}
+
+export interface ChaletStatisticsTopCustomer {
+  userId?: string;
+  fullName?: string;
+  bookingsCount?: number;
+  totalSpent?: number;
+}
+
+/** GET /api/statistics/chalet/{id}?startDate&endDate — confirmed via a live call. ChaletAdmin (own chalet) only per the docs. */
+export interface ChaletStatistics {
+  chaletId?: number;
+  chaletName?: string;
+  startDate?: string;
+  endDate?: string;
+  totalBookings?: number;
+  pendingCount?: number;
+  confirmedCount?: number;
+  rejectedCount?: number;
+  cancelledCount?: number;
+  cancellationPendingCount?: number;
+  completedCount?: number;
+  totalRevenue?: number;
+  occupancyRatePercentage?: number;
+  averageRating?: number | null;
+  reviewsCount?: number;
+  monthlyBreakdown?: ChaletStatisticsMonthlyBreakdown[];
+  bookingTypeBreakdown?: ChaletStatisticsBookingTypeBreakdown[];
+  paymentMethodBreakdown?: ChaletStatisticsPaymentMethodBreakdown[];
+  topCustomers?: ChaletStatisticsTopCustomer[];
+}
+
+export interface TopChaletByRevenue {
+  chaletId?: number;
+  chaletName?: string;
+  revenue?: number;
+  bookingsCount?: number;
+}
+
+/**
+ * GET /api/statistics/system?startDate&endDate — SuperAdmin/SystemAdmin
+ * only, per the docs. Unlike `ChaletStatistics`, this couldn't be verified
+ * against a live response (no SuperAdmin/SystemAdmin credentials were
+ * available) — field names below are taken straight from the Postman docs
+ * screenshot and every field is optional, read defensively.
+ */
+export interface SystemStatistics {
+  totalChalets?: number;
+  activeChalets?: number;
+  totalCustomers?: number;
+  totalChaletAdmins?: number;
+  totalBookings?: number;
+  pendingCount?: number;
+  confirmedCount?: number;
+  completedCount?: number;
+  cancelledCount?: number;
+  rejectedCount?: number;
+  totalRevenue?: number;
+  topChaletsByRevenue?: TopChaletByRevenue[];
+  [key: string]: unknown;
+}
+
+// ---------- Chalet Reviews: /api/chalet-reviews ----------
+
+/**
+ * A customer's review of a chalet. Confirmed via a live call to
+ * `GET /api/chalet-reviews/chalet/{id}/pending`. Only approved reviews count
+ * toward the chalet's own `averageRating`/`reviewsCount` — unapproved ones
+ * only show up in the pending-moderation list.
+ */
+export interface ChaletReview {
+  id: number;
+  userId?: string;
+  userFullName?: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+}
+
+/** POST /api/chalet-reviews — Customer, must own the (Completed) booking being reviewed. */
+export interface CreateChaletReviewRequest {
+  bookingId: number;
+  rating: number;
+  comment: string;
+}
+
+// ---------- Customer Reviews: /api/admin/users/{id}/reviews ----------
+
+/**
+ * One admin-authored review of a customer's behavior on one of their
+ * bookings — separate from `ChaletReview` (which is the reverse: a customer
+ * reviewing a chalet). Never shown to the customer or publicly. The app
+ * only ever *reads* these (via `getCustomerBookingStats`/
+ * `getAllCustomerReviews`) — creating one isn't exposed in the UI, since
+ * reviews are meant to be a customer-facing action, not something a chalet
+ * admin does to a customer. The exact shape when populated is unverified
+ * (every live call returned an empty list/array) — read defensively.
+ */
+export interface CustomerReviewRecord {
+  id?: number;
+  userId?: string;
+  userFullName?: string;
+  chaletId?: number;
+  chaletName?: string;
+  cleanlinessRating?: number;
+  disturbanceRating?: number;
+  paymentReliabilityRating?: number;
+  notes?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
+/** GET /api/admin/users/{id}/reviews/booking-stats — confirmed via a live call. */
+export interface CustomerBookingStats {
+  userId?: string;
+  fullName?: string;
+  phoneNumber?: string | null;
+  totalBookings?: number;
+  confirmedCount?: number;
+  rejectedCount?: number;
+  cancelledCount?: number;
+  completedCount?: number;
+  pendingCount?: number;
+  totalPaidAmount?: number;
+  averageCleanlinessRating?: number;
+  averageDisturbanceRating?: number;
+  averagePaymentReliabilityRating?: number;
+  reviews?: CustomerReviewRecord[];
+}
+
 // ---------- Generic API envelope ----------
+
+/**
+ * Shape some list endpoints (confirmed on `GET /api/Chalet`, likely others)
+ * nest inside `message` — `{ success, message: { items, totalCount, page,
+ * pageSize, totalPages } }`. See `unwrapPaginated` in `lib/api/client.ts`.
+ */
+export interface PaginatedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 export interface ApiErrorBody {
   message?: string;

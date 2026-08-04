@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, X } from "lucide-react";
+import { Check, TriangleAlert, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,25 +10,100 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert } from "@/components/ui/alert";
 import { BookingStatusBadge } from "@/components/bookings/booking-status-badge";
-import { approveBookingAction, rejectBookingAction } from "@/lib/actions/chalet-booking-actions";
+import {
+  approveBookingAction,
+  approveBookingAndRejectConflictsAction,
+  getBookingConflictsAction,
+  getCustomerBalanceAction,
+  recordBookingPaymentAction,
+  rejectBookingAction,
+} from "@/lib/actions/chalet-booking-actions";
+import { getCustomerBookingStatsAction } from "@/lib/actions/customer-review-actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Booking } from "@/lib/api/types";
+import type { Booking, CustomerBalance, CustomerBookingStats } from "@/lib/api/types";
 
-type PendingAction = { bookingId: number; type: "approve" | "reject" };
+type PendingAction =
+  | { bookingId: number; type: "approve"; conflicts: Booking[] }
+  | { bookingId: number; type: "reject" }
+  | { bookingId: number; type: "pay" };
+
+const DEFAULT_CONFLICT_REASON = "Another booking for the same dates was approved.";
+
+/** The real field is `userFullName` (often an empty string, not omitted) — `customerName` is a defensive fallback only. */
+function customerLabel(booking: Booking): string {
+  return booking.userFullName || booking.customerName || `#${booking.id}`;
+}
+
+/** Renders one booking's summary line — reused for the row itself and for the conflicting bookings listed under it. */
+function BookingSummary({ booking }: { booking: Booking }) {
+  const days = booking.days ?? [];
+  const firstDay = days[0];
+  const lastDay = days[days.length - 1];
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <span dir="auto" className="font-medium text-foreground">
+        {customerLabel(booking)}
+      </span>
+      <span className="text-muted-foreground">
+        {firstDay ? (
+          <>
+            {formatDate(firstDay.date)}
+            {lastDay && lastDay.date !== firstDay.date && ` – ${formatDate(lastDay.date)}`}
+          </>
+        ) : (
+          "—"
+        )}
+      </span>
+      {typeof booking.totalPrice === "number" && <span className="font-medium">{formatCurrency(booking.totalPrice)}</span>}
+    </div>
+  );
+}
 
 /** Client Component: approve/reject open an inline mini-form in the row below, matching the AmenitiesList edit-row pattern. */
-export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number; bookings: Booking[] }) {
+export function ChaletBookingsManager({
+  chaletId,
+  bookings,
+  bookingDatesById = {},
+}: {
+  chaletId: number;
+  bookings: Booking[];
+  /** bookingId (as a string key) -> sorted dates, built from the chalet calendar for whatever month is currently displayed — see `buildBookingDatesById`. */
+  bookingDatesById?: Record<string, string[]>;
+}) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = React.useState<PendingAction | null>(null);
+  const [loadingConflictsFor, setLoadingConflictsFor] = React.useState<number | null>(null);
   const [refundWindowHours, setRefundWindowHours] = React.useState("48");
   const [reason, setReason] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  function startApprove(bookingId: number) {
+  const [paymentAmount, setPaymentAmount] = React.useState("");
+  const [paymentMethod, setPaymentMethod] = React.useState("Cash");
+
+  const [balanceFor, setBalanceFor] = React.useState<number | null>(null);
+  const [balance, setBalance] = React.useState<CustomerBalance | null>(null);
+  const [bookingStats, setBookingStats] = React.useState<CustomerBookingStats | null>(null);
+  const [balanceLoading, setBalanceLoading] = React.useState(false);
+  const [balanceError, setBalanceError] = React.useState<string | null>(null);
+
+  async function startApprove(bookingId: number) {
     setError(null);
     setRefundWindowHours("48");
-    setPendingAction({ bookingId, type: "approve" });
+    setLoadingConflictsFor(bookingId);
+    try {
+      const result = await getBookingConflictsAction(bookingId);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      // Pending-only: an already Confirmed/Rejected conflict isn't a live contender.
+      const conflicts = result.conflicts.filter((c) => c.status === "Pending");
+      setReason(DEFAULT_CONFLICT_REASON);
+      setPendingAction({ bookingId, type: "approve", conflicts });
+    } finally {
+      setLoadingConflictsFor(null);
+    }
   }
 
   function startReject(bookingId: number) {
@@ -37,11 +112,20 @@ export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number
     setPendingAction({ bookingId, type: "reject" });
   }
 
-  async function confirmApprove(bookingId: number) {
+  async function confirmApprove(bookingId: number, conflicts: Booking[]) {
     setError(null);
     setIsSaving(true);
     try {
-      const result = await approveBookingAction(bookingId, chaletId, Number(refundWindowHours) || 0);
+      const result =
+        conflicts.length > 0
+          ? await approveBookingAndRejectConflictsAction(
+              bookingId,
+              chaletId,
+              Number(refundWindowHours) || 0,
+              conflicts.map((c) => c.id),
+              reason,
+            )
+          : await approveBookingAction(bookingId, chaletId, Number(refundWindowHours) || 0);
       if (!result.success) {
         setError(result.message);
         return;
@@ -69,6 +153,54 @@ export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number
     }
   }
 
+  function startPay(bookingId: number) {
+    setError(null);
+    setPaymentAmount("");
+    setPaymentMethod("Cash");
+    setPendingAction({ bookingId, type: "pay" });
+  }
+
+  async function confirmPay(bookingId: number) {
+    setError(null);
+    setIsSaving(true);
+    try {
+      const result = await recordBookingPaymentAction(bookingId, chaletId, Number(paymentAmount) || 0, paymentMethod);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      setPendingAction(null);
+      router.refresh();
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function toggleBalance(bookingId: number, userId: string) {
+    if (balanceFor === bookingId) {
+      setBalanceFor(null);
+      return;
+    }
+    setBalanceError(null);
+    setBalance(null);
+    setBookingStats(null);
+    setBalanceFor(bookingId);
+    setBalanceLoading(true);
+    try {
+      const [balanceResult, statsResult] = await Promise.all([
+        getCustomerBalanceAction(userId),
+        getCustomerBookingStatsAction(userId),
+      ]);
+      if (balanceResult.success) setBalance(balanceResult.balance);
+      if (statsResult.success) setBookingStats(statsResult.stats);
+      if (!balanceResult.success && !statsResult.success) {
+        setBalanceError(balanceResult.message);
+      }
+    } finally {
+      setBalanceLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {error && <Alert variant="destructive">{error}</Alert>}
@@ -87,23 +219,29 @@ export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number
         <TableBody>
           {bookings.length > 0 ? (
             bookings.map((booking) => {
-              const days = booking.days ?? [];
-              const firstDay = days[0];
-              const lastDay = days[days.length - 1];
+              // The booking list endpoint's own `days` always comes back empty —
+              // fall back to the calendar-derived lookup for the currently
+              // displayed month (see `bookingDatesById`'s doc comment).
+              const ownDates = (booking.days ?? []).map((d) => d.date);
+              const fallbackDates = bookingDatesById[String(booking.id)] ?? [];
+              const dates = ownDates.length > 0 ? ownDates : fallbackDates;
+              const firstDate = dates[0];
+              const lastDate = dates[dates.length - 1];
               const isPending = booking.status === "Pending";
               const actionHere = pendingAction?.bookingId === booking.id ? pendingAction : null;
+              const isLoadingConflicts = loadingConflictsFor === booking.id;
 
               return (
                 <React.Fragment key={booking.id}>
                   <TableRow>
                     <TableCell dir="auto" className="font-medium">
-                      {booking.customerName ?? `#${booking.id}`}
+                      {customerLabel(booking)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {firstDay ? (
+                      {firstDate ? (
                         <>
-                          {formatDate(firstDay.date)}
-                          {lastDay && lastDay.date !== firstDay.date && ` – ${formatDate(lastDay.date)}`}
+                          {formatDate(firstDate)}
+                          {lastDate && lastDate !== firstDate && ` – ${formatDate(lastDate)}`}
                         </>
                       ) : (
                         "—"
@@ -112,40 +250,131 @@ export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number
                     <TableCell>{booking.childrenCount ?? "—"}</TableCell>
                     <TableCell>
                       {typeof booking.totalPrice === "number" ? formatCurrency(booking.totalPrice) : "—"}
+                      {typeof booking.paidAmount === "number" && booking.paidAmount > 0 && (
+                        <p className="text-xs text-success">Paid {formatCurrency(booking.paidAmount)}</p>
+                      )}
                     </TableCell>
                     <TableCell>
                       <BookingStatusBadge status={booking.status} />
                     </TableCell>
                     <TableCell>
-                      {isPending && !actionHere && (
-                        <div className="flex items-center gap-1">
-                          <Button type="button" size="sm" onClick={() => startApprove(booking.id)}>
-                            Approve
+                      <div className="flex flex-wrap items-center gap-1">
+                        {isPending && !actionHere && (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              loading={isLoadingConflicts}
+                              onClick={() => startApprove(booking.id)}
+                            >
+                              Approve
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" onClick={() => startReject(booking.id)}>
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                        {booking.userId && !actionHere && (
+                          <Button type="button" size="sm" variant="ghost" onClick={() => startPay(booking.id)}>
+                            Pay
                           </Button>
-                          <Button type="button" size="sm" variant="outline" onClick={() => startReject(booking.id)}>
-                            Reject
+                        )}
+                        {booking.userId && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            loading={balanceLoading && balanceFor === booking.id}
+                            onClick={() => toggleBalance(booking.id, booking.userId as string)}
+                          >
+                            Customer
                           </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
 
-                  {actionHere?.type === "approve" && (
+                  {balanceFor === booking.id && (
+                    <TableRow>
+                      <TableCell colSpan={6}>
+                        <div className="space-y-3 rounded-md bg-muted p-3 text-sm">
+                          {balanceLoading ? (
+                            <span className="text-muted-foreground">Loading…</span>
+                          ) : (
+                            <>
+                              {balanceError && <span className="text-destructive">{balanceError}</span>}
+                              {balance && (
+                                <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                  {typeof balance.totalOwed === "number" && (
+                                    <span>
+                                      Total owed: <strong className="font-semibold">{formatCurrency(balance.totalOwed)}</strong>
+                                    </span>
+                                  )}
+                                  {typeof balance.totalPaid === "number" && (
+                                    <span>
+                                      Total paid: <strong className="font-semibold">{formatCurrency(balance.totalPaid)}</strong>
+                                    </span>
+                                  )}
+                                  {typeof balance.balance === "number" && (
+                                    <span>
+                                      Balance: <strong className="font-semibold">{formatCurrency(balance.balance)}</strong>
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {bookingStats && (
+                                <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
+                                  <span>{bookingStats.totalBookings ?? 0} bookings total</span>
+                                  <span>{bookingStats.confirmedCount ?? 0} confirmed</span>
+                                  <span>{bookingStats.completedCount ?? 0} completed</span>
+                                  <span>{bookingStats.cancelledCount ?? 0} cancelled</span>
+                                  <span>{bookingStats.rejectedCount ?? 0} rejected</span>
+                                  {(bookingStats.averageCleanlinessRating ?? 0) > 0 && (
+                                    <span>Cleanliness avg {bookingStats.averageCleanlinessRating?.toFixed(1)}</span>
+                                  )}
+                                  {(bookingStats.averageDisturbanceRating ?? 0) > 0 && (
+                                    <span>Disturbance avg {bookingStats.averageDisturbanceRating?.toFixed(1)}</span>
+                                  )}
+                                  {(bookingStats.averagePaymentReliabilityRating ?? 0) > 0 && (
+                                    <span>Payment reliability avg {bookingStats.averagePaymentReliabilityRating?.toFixed(1)}</span>
+                                  )}
+                                </div>
+                              )}
+                              {!balance && !bookingStats && !balanceError && (
+                                <span className="text-muted-foreground">No details available for this customer.</span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {actionHere?.type === "pay" && (
                     <TableRow>
                       <TableCell colSpan={6}>
                         <div className="flex flex-wrap items-end gap-3 rounded-md bg-muted p-3">
-                          <div className="w-40 space-y-1.5">
-                            <Label htmlFor={`refundWindow-${booking.id}`}>Refund window (hours)</Label>
+                          <div className="w-32 space-y-1.5">
+                            <Label htmlFor={`pay-amount-${booking.id}`}>Amount</Label>
                             <Input
-                              id={`refundWindow-${booking.id}`}
+                              id={`pay-amount-${booking.id}`}
                               type="number"
                               min={0}
-                              value={refundWindowHours}
-                              onChange={(e) => setRefundWindowHours(e.target.value)}
+                              value={paymentAmount}
+                              onChange={(e) => setPaymentAmount(e.target.value)}
                             />
                           </div>
-                          <Button type="button" size="sm" loading={isSaving} onClick={() => confirmApprove(booking.id)}>
-                            <Check className="h-4 w-4" /> Confirm approval
+                          <div className="w-40 space-y-1.5">
+                            <Label htmlFor={`pay-method-${booking.id}`}>Payment method</Label>
+                            <Input
+                              id={`pay-method-${booking.id}`}
+                              value={paymentMethod}
+                              onChange={(e) => setPaymentMethod(e.target.value)}
+                              placeholder="Cash"
+                            />
+                          </div>
+                          <Button type="button" size="sm" loading={isSaving} onClick={() => confirmPay(booking.id)}>
+                            <Check className="h-4 w-4" /> Record payment
                           </Button>
                           <Button
                             type="button"
@@ -156,6 +385,76 @@ export function ChaletBookingsManager({ chaletId, bookings }: { chaletId: number
                           >
                             <X className="h-4 w-4" /> Cancel
                           </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {actionHere?.type === "approve" && (
+                    <TableRow>
+                      <TableCell colSpan={6}>
+                        <div className="space-y-3 rounded-md bg-muted p-3">
+                          {actionHere.conflicts.length > 0 && (
+                            <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
+                              <p className="flex items-center gap-1.5 text-sm font-medium text-warning">
+                                <TriangleAlert className="h-4 w-4 shrink-0" />
+                                {actionHere.conflicts.length} other pending request
+                                {actionHere.conflicts.length > 1 ? "s" : ""} for overlapping dates
+                              </p>
+                              <div className="space-y-1.5">
+                                {actionHere.conflicts.map((c) => (
+                                  <BookingSummary key={c.id} booking={c} />
+                                ))}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Approving this booking will reject the request(s) above with the reason below.
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-end gap-3">
+                            <div className="w-40 space-y-1.5">
+                              <Label htmlFor={`refundWindow-${booking.id}`}>Refund window (hours)</Label>
+                              <Input
+                                id={`refundWindow-${booking.id}`}
+                                type="number"
+                                min={0}
+                                value={refundWindowHours}
+                                onChange={(e) => setRefundWindowHours(e.target.value)}
+                              />
+                            </div>
+                            {actionHere.conflicts.length > 0 && (
+                              <div className="w-72 space-y-1.5">
+                                <Label htmlFor={`conflict-reason-${booking.id}`}>Reason for rejecting the others</Label>
+                                <Textarea
+                                  id={`conflict-reason-${booking.id}`}
+                                  rows={2}
+                                  value={reason}
+                                  onChange={(e) => setReason(e.target.value)}
+                                />
+                              </div>
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              loading={isSaving}
+                              onClick={() => confirmApprove(booking.id, actionHere.conflicts)}
+                            >
+                              <Check className="h-4 w-4" />
+                              {actionHere.conflicts.length > 0
+                                ? `Approve & reject the others (${actionHere.conflicts.length})`
+                                : "Confirm approval"}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={isSaving}
+                              onClick={() => setPendingAction(null)}
+                            >
+                              <X className="h-4 w-4" /> Cancel
+                            </Button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>

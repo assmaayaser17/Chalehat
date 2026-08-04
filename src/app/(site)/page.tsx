@@ -1,44 +1,91 @@
 import { Suspense } from "react";
-import { Waves } from "lucide-react";
+import { CalendarDays, MapPin, Search } from "lucide-react";
 import { ChaletList } from "@/components/chalets/chalet-list";
 import { ChaletGridSkeleton } from "@/components/chalets/chalet-grid-skeleton";
 
-export default function HomePage() {
-  return (
-    <>
-      <section className="relative overflow-hidden bg-primary-900 text-white">
-        <div className="container relative z-10 flex flex-col items-center gap-5 py-20 text-center md:py-28">
-          <span className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-accent-200">
-            <Waves className="h-4 w-4" /> An unforgettable seaside stay
-          </span>
-          <h1 className="max-w-2xl text-3xl font-bold leading-tight md:text-5xl">
-            Book the most beautiful chalets <span className="text-accent-400">and holiday villas</span>
-          </h1>
-          <p className="max-w-xl text-primary-100 md:text-lg">
-            Browse a curated selection of seaside chalets and message the owner directly to confirm your booking.
-          </p>
-          <a
-            href="#chalets"
-            className="mt-2 rounded-md bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-sm transition-colors hover:bg-accent-600"
-          >
-            Browse chalets
-          </a>
-        </div>
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-primary-950/40 to-transparent"
-        />
-      </section>
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
 
-      <section id="chalets" className="container scroll-mt-20 py-14 md:py-20">
+export default async function HomePage({ searchParams }: PageProps) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+
+  return (
+    <div className="container py-10 md:py-14">
+      <div className="mb-10 space-y-6">
+        <h1 className="text-3xl font-extrabold leading-tight text-primary-800 md:text-[40px]">
+          Discover the Finest Chalets
+        </h1>
+
+        {/* Visual only for now — not wired to real filtering/search logic. */}
+        <div className="rounded-3xl border border-border bg-sand-100 p-5 shadow-sm md:p-6">
+          <div className="flex flex-col items-end gap-4 md:flex-row">
+            <div className="w-full space-y-1.5 md:w-1/4">
+              <label htmlFor="home-search-location" className="block text-xs font-medium text-muted-foreground">
+                Location
+              </label>
+              <div className="relative">
+                <input
+                  id="home-search-location"
+                  type="text"
+                  placeholder="Where do you want to go?"
+                  className="h-11 w-full rounded-xl border-0 bg-white px-3 pe-9 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <MapPin className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="w-full space-y-1.5 md:w-1/4">
+              <label htmlFor="home-search-date" className="block text-xs font-medium text-muted-foreground">
+                Date
+              </label>
+              <div className="relative">
+                <input
+                  id="home-search-date"
+                  type="text"
+                  placeholder="Choose a date"
+                  className="h-11 w-full rounded-xl border-0 bg-white px-3 pe-9 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <CalendarDays className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="w-full space-y-1.5 md:w-1/4">
+              <label htmlFor="home-search-type" className="block text-xs font-medium text-muted-foreground">
+                Chalet type
+              </label>
+              <select
+                id="home-search-type"
+                className="h-11 w-full appearance-none rounded-xl border-0 bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                defaultValue="All"
+              >
+                <option>All</option>
+                <option>Family</option>
+                <option>Youth</option>
+                <option>Event</option>
+              </select>
+            </div>
+
+            <a
+              href="#chalets"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-800 px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary-700 md:w-1/6"
+            >
+              <Search className="h-4 w-4" /> Search
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <section id="chalets" className="scroll-mt-24">
         <div className="mb-8 flex flex-col gap-2">
-          <h2 className="text-2xl font-bold text-foreground md:text-3xl">Available chalets</h2>
+          <h2 className="text-2xl font-bold text-foreground md:text-3xl">Available Chalets</h2>
           <p className="text-muted-foreground">Choose from our featured chalets by your preferred location.</p>
         </div>
-        <Suspense fallback={<ChaletGridSkeleton />}>
-          <ChaletList />
+        <Suspense key={page} fallback={<ChaletGridSkeleton />}>
+          <ChaletList page={page} />
         </Suspense>
       </section>
-    </>
+    </div>
   );
 }

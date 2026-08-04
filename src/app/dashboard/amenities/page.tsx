@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AmenitiesList } from "@/components/admin/amenities-list";
 import { PageHeader } from "@/components/shared/page-header";
 import { getAllAmenities } from "@/lib/api/amenity";
@@ -26,11 +26,14 @@ export default async function AmenitiesPage() {
         }
       />
 
-      <Card>
-        <CardHeader className="border-b border-border">
-          <CardTitle>All amenities</CardTitle>
-          <CardDescription>{amenities.length} amenities currently added.</CardDescription>
-        </CardHeader>
+      <Card className="overflow-hidden">
+        <div className="flex items-center gap-2.5 bg-primary-800 px-5 py-4 text-white">
+          <Sparkles className="h-4 w-4 text-accent-300" />
+          <div>
+            <p className="text-sm font-bold">All Amenities</p>
+            <p className="text-xs text-primary-100">{amenities.length} amenities currently added.</p>
+          </div>
+        </div>
         <CardContent className="pt-5">
           <AmenitiesList initialAmenities={amenities} />
         </CardContent>

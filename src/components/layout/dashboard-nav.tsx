@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarRange, Home, PlusCircle, Sparkles, Users } from "lucide-react";
+import { BarChart3, CalendarRange, Home, LayoutDashboard, PlusCircle, Sparkles, Star, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAFF_MANAGEMENT_ROLES, type UserRole } from "@/lib/api/types";
 
@@ -24,6 +24,30 @@ function navSectionsForRole(role: UserRole): NavSection[] {
   const isSuperAdmin = role === "SuperAdmin";
 
   const sections: NavSection[] = [];
+
+  if (isSuperAdmin) {
+    sections.push({
+      label: "Overview",
+      items: [{ href: "/dashboard", label: "Overview", icon: LayoutDashboard }],
+    });
+  }
+
+  if (isStaffAdmin) {
+    sections.push({
+      label: "Statistics",
+      items: [{ href: "/dashboard/statistics", label: "Platform Statistics", icon: BarChart3 }],
+    });
+  }
+
+  // Admin-authored reviews of customer behavior — a ChaletAdmin gets a
+  // scoped view (their own customers only), a SuperAdmin/SystemAdmin sees
+  // everything, both confirmed live against the API.
+  if (isStaffAdmin || isChaletAdmin) {
+    sections.push({
+      label: "Reviews",
+      items: [{ href: "/dashboard/customer-reviews", label: "Customer Reviews", icon: Star }],
+    });
+  }
 
   if (isStaffAdmin || isSuperAdmin) {
     sections.push({

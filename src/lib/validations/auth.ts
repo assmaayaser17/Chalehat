@@ -32,6 +32,13 @@ export const registerSchema = z
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 
+export const verifyOtpSchema = z.object({
+  userId: z.string().min(1),
+  code: z.string().min(4, "Enter the code sent to your phone"),
+});
+
+export type VerifyOtpFormValues = z.infer<typeof verifyOtpSchema>;
+
 // The backend's own examples mix local (0599000000) and international
 // (+970599000000) formats for phone numbers across different endpoints, so
 // this stays lenient rather than picking one and rejecting the other.

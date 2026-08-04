@@ -36,7 +36,9 @@ export function ChaletSeasonalPricesManager({
   const available = allSeasons.filter((s) => !linkedSeasonIds.has(s.id));
 
   const [selectedSeasonId, setSelectedSeasonId] = React.useState<string>("");
-  const [price, setPrice] = React.useState("");
+  const [morningPrice, setMorningPrice] = React.useState("");
+  const [eveningPrice, setEveningPrice] = React.useState("");
+  const [fullDayPrice, setFullDayPrice] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const [pendingId, setPendingId] = React.useState<number | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -45,13 +47,21 @@ export function ChaletSeasonalPricesManager({
     setError(null);
     setIsSaving(true);
     try {
-      const result = await linkChaletSeasonalPriceAction(chaletId, Number(selectedSeasonId), Number(price));
+      const result = await linkChaletSeasonalPriceAction(
+        chaletId,
+        Number(selectedSeasonId),
+        Number(morningPrice) || 0,
+        Number(eveningPrice) || 0,
+        Number(fullDayPrice) || 0,
+      );
       if (!result.success) {
         setError(result.message);
         return;
       }
       setSelectedSeasonId("");
-      setPrice("");
+      setMorningPrice("");
+      setEveningPrice("");
+      setFullDayPrice("");
       router.refresh();
     } catch {
       setError("Something went wrong. Try again.");
@@ -103,12 +113,22 @@ export function ChaletSeasonalPricesManager({
                       <Sparkle className="h-3.5 w-3.5 fill-current" /> Seasonal price
                     </p>
                     <p dir="auto" className="truncate text-sm font-semibold text-foreground">
-                      {season?.name ?? `Season #${linked.seasonId}`}
+                      {linked.seasonName ?? season?.name ?? `Season #${linked.seasonId}`}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {season ? `${season.startDate} – ${season.endDate}` : "—"}
+                      {linked.seasonStartDate && linked.seasonEndDate
+                        ? `${linked.seasonStartDate} – ${linked.seasonEndDate}`
+                        : season
+                          ? `${season.startDate} – ${season.endDate}`
+                          : "—"}
                     </p>
-                    <p className="text-lg font-bold tabular-nums text-accent-700">{formatCurrency(linked.price)}</p>
+                    <p className="text-lg font-bold tabular-nums text-accent-700">
+                      {formatCurrency(linked.fullDayPrice)}
+                    </p>
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      <span>Morning {formatCurrency(linked.morningPrice)}</span>
+                      <span>Evening {formatCurrency(linked.eveningPrice)}</span>
+                    </div>
                   </div>
                   <Button
                     type="button"
@@ -156,11 +176,42 @@ export function ChaletSeasonalPricesManager({
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-32 space-y-1.5">
-              <Label htmlFor="price">Price</Label>
-              <Input id="price" type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} />
+            <div className="w-28 space-y-1.5">
+              <Label htmlFor="seasonMorningPrice">Morning</Label>
+              <Input
+                id="seasonMorningPrice"
+                type="number"
+                min={0}
+                value={morningPrice}
+                onChange={(e) => setMorningPrice(e.target.value)}
+              />
             </div>
-            <Button type="button" loading={isSaving} disabled={!selectedSeasonId || !price} onClick={handleAdd}>
+            <div className="w-28 space-y-1.5">
+              <Label htmlFor="seasonEveningPrice">Evening</Label>
+              <Input
+                id="seasonEveningPrice"
+                type="number"
+                min={0}
+                value={eveningPrice}
+                onChange={(e) => setEveningPrice(e.target.value)}
+              />
+            </div>
+            <div className="w-28 space-y-1.5">
+              <Label htmlFor="seasonFullDayPrice">Full day</Label>
+              <Input
+                id="seasonFullDayPrice"
+                type="number"
+                min={0}
+                value={fullDayPrice}
+                onChange={(e) => setFullDayPrice(e.target.value)}
+              />
+            </div>
+            <Button
+              type="button"
+              loading={isSaving}
+              disabled={!selectedSeasonId || (!morningPrice && !eveningPrice && !fullDayPrice)}
+              onClick={handleAdd}
+            >
               <Plus /> Add
             </Button>
           </div>

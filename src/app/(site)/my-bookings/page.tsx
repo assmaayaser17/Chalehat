@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { BookingStatusBadge } from "@/components/bookings/booking-status-badge";
+import { LeaveReviewForm } from "@/components/bookings/leave-review-form";
 import { ApiError } from "@/lib/api/client";
 import { getMyBookings } from "@/lib/api/booking";
 import { getSession } from "@/lib/auth/session";
@@ -48,9 +49,9 @@ export default async function MyBookingsPage() {
             const lastDay = days[days.length - 1];
             return (
               <Card key={booking.id}>
-                <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
+                <CardContent dir="auto" className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <div>
-                    <p dir="auto" className="font-semibold text-foreground">
+                    <p className="font-semibold text-foreground">
                       {booking.chaletName ?? `Chalet #${booking.chaletId}`}
                     </p>
                     {firstDay && (
@@ -69,6 +70,7 @@ export default async function MyBookingsPage() {
                     )}
                     <BookingStatusBadge status={booking.status} />
                   </div>
+                  {booking.status === "Completed" && <LeaveReviewForm bookingId={booking.id} />}
                 </CardContent>
               </Card>
             );

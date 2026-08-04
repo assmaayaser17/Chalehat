@@ -2,19 +2,19 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
-import { ChaletWeekdayPriceForm } from "@/components/chalets/chalet-weekday-price-form";
+import { ChaletPendingReviewsManager } from "@/components/chalets/chalet-pending-reviews-manager";
 import { PageHeader } from "@/components/shared/page-header";
 import { ApiError } from "@/lib/api/client";
 import { getChaletById } from "@/lib/api/chalet";
-import { getChaletWeekdayPrices } from "@/lib/api/chalet-weekday-prices";
+import { getPendingChaletReviews } from "@/lib/api/chalet-reviews";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export const metadata: Metadata = { title: "Chalet Weekday Prices" };
+export const metadata: Metadata = { title: "Chalet Reviews" };
 
-export default async function ChaletWeekdayPricesPage({ params }: PageProps) {
+export default async function ChaletReviewsPage({ params }: PageProps) {
   const { id } = await params;
   const chaletId = Number(id);
   if (!Number.isFinite(chaletId)) notFound();
@@ -27,31 +27,33 @@ export default async function ChaletWeekdayPricesPage({ params }: PageProps) {
     throw err;
   }
 
-  let weekdayPrices: Awaited<ReturnType<typeof getChaletWeekdayPrices>> = [];
+  let reviews: Awaited<ReturnType<typeof getPendingChaletReviews>> = [];
   let errorMessage: string | null = null;
   try {
-    weekdayPrices = await getChaletWeekdayPrices(chaletId);
+    reviews = await getPendingChaletReviews(chaletId);
   } catch (err) {
-    errorMessage = err instanceof ApiError ? err.message : "Couldn't load weekday prices.";
+    errorMessage = err instanceof ApiError ? err.message : "Couldn't load pending reviews.";
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
-        title={`Weekday Prices — ${chalet.name}`}
-        description="Set a price for specific days of the week, independent of any season. If a day also falls inside a linked season, whichever rule has the higher priority applies."
+        title={`Reviews — ${chalet.name}`}
+        description="Approve customer reviews before they show publicly on the chalet page."
       />
 
       <Card>
         <CardHeader className="border-b border-border">
-          <CardTitle>Weekday prices</CardTitle>
-          <CardDescription>Rules with a higher priority win when a day is covered by more than one.</CardDescription>
+          <CardTitle>Pending reviews</CardTitle>
+          <CardDescription>
+            {errorMessage ? "Couldn't load pending reviews." : `${reviews.length} review${reviews.length === 1 ? "" : "s"} waiting.`}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-5">
           {errorMessage ? (
             <Alert variant="destructive">{errorMessage}</Alert>
           ) : (
-            <ChaletWeekdayPriceForm chaletId={chaletId} initialPrices={weekdayPrices} />
+            <ChaletPendingReviewsManager chaletId={chaletId} reviews={reviews} />
           )}
         </CardContent>
       </Card>

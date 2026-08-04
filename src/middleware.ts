@@ -1,8 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { Session, UserRole } from "@/lib/api/types";
 import { DASHBOARD_ROLES, STAFF_MANAGEMENT_ROLES } from "@/lib/api/types";
+import { buildSession, isAccessTokenExpired } from "@/lib/auth/session";
+import { refreshTokensDeduped } from "@/lib/api/client";
 
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME || "chalehat_session";
+// Mirrors setSession's floor in lib/auth/session.ts.
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 function readSession(request: NextRequest): Session | null {
   const raw = request.cookies.get(COOKIE_NAME)?.value;
@@ -36,9 +40,50 @@ function homeForRole(role: string | undefined) {
   return "/dashboard";
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = readSession(request);
+  let session = readSession(request);
+
+  // Proactively refresh an expired access token *here*, before the request
+  // ever reaches a page. This is the fix for a real bug: Next.js only
+  // allows `cookies().set()`/`.delete()` inside a Server Action or Route
+  // Handler — never during a plain Server Component render. `authFetch`
+  // (called directly from page data-fetching) was silently unable to
+  // persist a rotated session cookie after refreshing, so the freshly
+  // issued token worked for that one request but the *cookie* kept the
+  // old, already-consumed refresh token. The next page load presented that
+  // same dead token again, the backend's rotation reuse-detection rejected
+  // it ("Security alert: this session has been invalidated"), and the
+  // cycle repeated on every subsequent visit. Refreshing here means a page
+  // never sees an expired token in the first place.
+  let refreshedSession: Session | null = null;
+  let sessionExpired = false;
+  if (session && isAccessTokenExpired(session)) {
+    try {
+      const tokens = await refreshTokensDeduped(session.refreshToken);
+      refreshedSession = buildSession(tokens);
+      session = refreshedSession;
+    } catch {
+      session = null;
+      sessionExpired = true;
+    }
+  }
+
+  /** Applies whatever happened to the session above onto the response this request ends up returning. */
+  function finish(response: NextResponse): NextResponse {
+    if (refreshedSession) {
+      response.cookies.set(COOKIE_NAME, JSON.stringify(refreshedSession), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: COOKIE_MAX_AGE,
+      });
+    } else if (sessionExpired) {
+      response.cookies.delete(COOKIE_NAME);
+    }
+    return response;
+  }
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isDashboard = pathname.startsWith("/dashboard");
@@ -47,7 +92,7 @@ export function middleware(request: NextRequest) {
 
   // Logged-in users shouldn't see the login/register screens again.
   if (isAuthPage && session) {
-    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
   // Account settings (e.g. change password) — every role can reach this, no
@@ -57,17 +102,17 @@ export function middleware(request: NextRequest) {
       const url = new URL("/login", request.url);
       url.searchParams.set("next", pathname);
       const response = NextResponse.redirect(url);
-      if (session) response.cookies.delete(COOKIE_NAME);
+      response.cookies.delete(COOKIE_NAME);
       return response;
     }
-    return NextResponse.next();
+    return finish(NextResponse.next());
   }
 
   if (isMyBookings) {
     if (!session) {
       const url = new URL("/login", request.url);
       url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
+      return finish(NextResponse.redirect(url));
     }
     if (normalizeRole(session.role) === null) {
       const url = new URL("/login", request.url);
@@ -78,20 +123,20 @@ export function middleware(request: NextRequest) {
     }
     // Only a Customer has bookings — every other role gets sent to their own home.
     if (session.role !== "Customer") {
-      return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+      return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
     }
-    return NextResponse.next();
+    return finish(NextResponse.next());
   }
 
   if (!isDashboard) {
-    return NextResponse.next();
+    return finish(NextResponse.next());
   }
 
   // No session at all -> bounce to login, remembering where they were headed.
   if (!session) {
     const url = new URL("/login", request.url);
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    return finish(NextResponse.redirect(url));
   }
 
   // Corrupted/unknown role -> the session cookie can't be trusted, clear it and
@@ -107,7 +152,7 @@ export function middleware(request: NextRequest) {
 
   // Customer (and any other non-admin role) has no dashboard area at all.
   if (!DASHBOARD_ROLES.includes(session.role as (typeof DASHBOARD_ROLES)[number])) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return finish(NextResponse.redirect(new URL("/", request.url)));
   }
 
   const isStaffAdmin = STAFF_MANAGEMENT_ROLES.includes(
@@ -118,31 +163,38 @@ export function middleware(request: NextRequest) {
   const isSuperAdmin = session.role === "SuperAdmin";
 
   if (pathname.startsWith("/dashboard/staff") && !isStaffAdmin && !isSuperAdmin) {
-    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
   if (pathname.startsWith("/dashboard/chalets") && !isChaletAdmin && !isSuperAdmin) {
-    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
   // Creating a chalet is a SuperAdmin-only action — a ChaletAdmin only ever
   // receives chalets that were created and assigned to them, they never
   // create their own (matches the business flow, not just an API permission).
   if (pathname.startsWith("/dashboard/chalets/new") && !isSuperAdmin) {
-    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
   if (pathname.startsWith("/dashboard/amenities") && !isStaffAdmin && !isSuperAdmin) {
-    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
   // Seasons are a shared, global concept — SuperAdmin only, unlike amenities
   // which SystemAdmin also manages.
   if (pathname.startsWith("/dashboard/seasons") && !isSuperAdmin) {
-    return NextResponse.redirect(new URL(homeForRole(session.role), request.url));
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
-  return NextResponse.next();
+  // Platform-wide statistics — SuperAdmin/SystemAdmin only per the API docs,
+  // unlike per-chalet statistics which a ChaletAdmin also gets (that route
+  // lives under /dashboard/chalets/[id]/statistics, already gated above).
+  if (pathname.startsWith("/dashboard/statistics") && !isStaffAdmin) {
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
+  }
+
+  return finish(NextResponse.next());
 }
 
 export const config = {

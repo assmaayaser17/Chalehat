@@ -19,7 +19,12 @@ export function MobileNav({ authSlot }: { authSlot: React.ReactNode }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-white/10 hover:text-accent-300 md:hidden"
+          aria-label="Open menu"
+        >
           <Menu />
         </Button>
       </SheetTrigger>

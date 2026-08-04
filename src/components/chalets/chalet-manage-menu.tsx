@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  BarChart3,
   CalendarCheck,
   CalendarClock,
   CalendarRange,
@@ -9,6 +10,7 @@ import {
   ImageUp,
   Settings2,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +55,16 @@ export function ChaletManageMenu({ chaletId }: { chaletId: number }) {
         <DropdownMenuItem asChild>
           <Link href={`${base}/bookings`}>
             <CalendarCheck /> Bookings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`${base}/statistics`}>
+            <BarChart3 /> Statistics
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`${base}/reviews`}>
+            <Star /> Reviews
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createChaletSchema, type CreateChaletFormValues } from "@/lib/validations/chalet";
@@ -15,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookingTypesField } from "@/components/chalets/booking-types-field";
 import type { ApiUser } from "@/lib/api/types";
+
+// Leaflet touches `window` at import time and has no SSR story — load it
+// only in the browser, after the rest of the form has already mounted.
+const ChaletLocationPicker = dynamic(
+  () => import("@/components/chalets/chalet-location-picker").then((mod) => mod.ChaletLocationPicker),
+  { ssr: false, loading: () => <div className="h-[320px] animate-pulse rounded-lg bg-muted" /> },
+);
 
 /**
  * Client Component: a large react-hook-form instance, so the whole form has
@@ -33,6 +41,8 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateChaletFormValues>({
     resolver: zodResolver(createChaletSchema),
@@ -50,6 +60,14 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
     setServerError(null);
     const result = await createChaletAction(values);
     if (!result.success) setServerError(result.message);
+  }
+
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
+
+  function handleLocationChange(lat: number, lng: number) {
+    setValue("latitude", lat, { shouldValidate: true, shouldDirty: true });
+    setValue("longitude", lng, { shouldValidate: true, shouldDirty: true });
   }
 
   return (
@@ -93,14 +111,21 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
         <FormField id="address" label="Address" error={errors.address?.message}>
           <Input id="address" dir="auto" {...register("address")} />
         </FormField>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField id="latitude" label="Latitude" error={errors.latitude?.message}>
-            <Input id="latitude" type="number" step="any" {...register("latitude")} />
-          </FormField>
-          <FormField id="longitude" label="Longitude" error={errors.longitude?.message}>
-            <Input id="longitude" type="number" step="any" {...register("longitude")} />
-          </FormField>
-        </div>
+        <FormField id="location" label="Location" error={errors.latitude?.message ?? errors.longitude?.message}>
+          <div className="space-y-3">
+            <ChaletLocationPicker latitude={latitude} longitude={longitude} onChange={handleLocationChange} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input id="latitude" type="number" step="any" {...register("latitude")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input id="longitude" type="number" step="any" {...register("longitude")} />
+              </div>
+            </div>
+          </div>
+        </FormField>
       </section>
 
       <section className="space-y-4 border-t border-border pt-8">

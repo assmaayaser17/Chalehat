@@ -30,27 +30,29 @@ export async function Navbar() {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" asChild>
+      <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/10 hover:text-accent-300">
         <Link href="/login">Log in</Link>
       </Button>
-      <Button variant="default" size="sm" asChild>
+      <Button size="sm" asChild className="bg-accent-400 text-primary-900 shadow-sm hover:bg-accent-300">
         <Link href="/register">Sign up</Link>
       </Button>
     </div>
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-40 bg-primary-800 shadow-sm">
       <div className="container flex h-16 items-center justify-between">
-        <Logo />
+        <div className="[&_span]:text-accent-300 [&_svg_circle]:fill-accent-400 [&_svg_path]:stroke-white">
+          <Logo />
+        </div>
 
         <nav className="hidden items-center gap-6 md:flex">
-          <Link href="/" className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary">
+          <Link href="/" className="text-sm font-medium text-white/90 transition-colors hover:text-accent-300">
             Home
           </Link>
           <Link
             href="/#chalets"
-            className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+            className="text-sm font-medium text-white/90 transition-colors hover:text-accent-300"
           >
             Chalets
           </Link>

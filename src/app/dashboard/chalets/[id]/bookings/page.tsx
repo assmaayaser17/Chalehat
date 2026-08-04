@@ -3,21 +3,36 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { ChaletBookingsManager } from "@/components/chalets/chalet-bookings-manager";
+import { ChaletCalendarView } from "@/components/chalets/chalet-calendar-view";
+import { MarkExpiredCompletedButton } from "@/components/chalets/mark-expired-completed-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { ApiError } from "@/lib/api/client";
 import { getChaletById } from "@/lib/api/chalet";
-import { getChaletBookings } from "@/lib/api/chalet-bookings";
+import { getChaletBookings, getChaletCalendar } from "@/lib/api/chalet-bookings";
+import { buildBookingDatesById, monthRange } from "@/lib/booking-calendar";
+import type { ChaletCalendarDay } from "@/lib/api/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ month?: string }>;
 }
 
 export const metadata: Metadata = { title: "Chalet Bookings" };
 
-export default async function ChaletBookingsPage({ params }: PageProps) {
+export default async function ChaletBookingsPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { month: monthParam } = await searchParams;
   const chaletId = Number(id);
   if (!Number.isFinite(chaletId)) notFound();
+
+  const now = new Date();
+  let year = now.getUTCFullYear();
+  let month = now.getUTCMonth();
+  if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+    const parts = monthParam.split("-").map(Number);
+    year = parts[0] ?? year;
+    month = (parts[1] ?? month + 1) - 1;
+  }
 
   let chalet;
   try {
@@ -35,20 +50,58 @@ export default async function ChaletBookingsPage({ params }: PageProps) {
     errorMessage = err instanceof ApiError ? err.message : "Couldn't load bookings for this chalet.";
   }
 
+  // Fetched once and reused for both the calendar grid and the bookings
+  // table's Dates column — `GET /api/Booking/chalet/{id}` returns each
+  // booking's own `days` as an empty array, but the calendar endpoint has
+  // the real per-date breakdown, see `buildBookingDatesById`.
+  const { startDate, endDate } = monthRange(year, month);
+  let calendarDays: ChaletCalendarDay[] = [];
+  let calendarFailed = false;
+  try {
+    calendarDays = await getChaletCalendar(chaletId, startDate, endDate);
+  } catch {
+    calendarFailed = true;
+  }
+  const bookingDatesById = buildBookingDatesById(calendarDays);
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <PageHeader title={`Bookings — ${chalet.name}`} description="Approve or reject booking requests for this chalet." />
+      <PageHeader
+        title={`Bookings — ${chalet.name}`}
+        description="Approve or reject booking requests for this chalet."
+        actions={<MarkExpiredCompletedButton chaletId={chaletId} />}
+      />
+
+      <Card>
+        <CardHeader className="border-b border-border">
+          <CardTitle>Availability calendar</CardTitle>
+          <CardDescription>Days already booked for this chalet.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-5">
+          <ChaletCalendarView
+            year={year}
+            month={month}
+            basePath={`/dashboard/chalets/${chaletId}/bookings`}
+            days={calendarDays}
+            failed={calendarFailed}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="border-b border-border">
           <CardTitle>Bookings</CardTitle>
-          <CardDescription>{errorMessage ? "Couldn't load bookings." : `${bookings.length} bookings so far.`}</CardDescription>
+          <CardDescription>
+            {errorMessage
+              ? "Couldn't load bookings."
+              : `${bookings.length} bookings so far. Dates shown are limited to the month displayed above.`}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-5">
           {errorMessage ? (
             <Alert variant="destructive">{errorMessage}</Alert>
           ) : (
-            <ChaletBookingsManager chaletId={chaletId} bookings={bookings} />
+            <ChaletBookingsManager chaletId={chaletId} bookings={bookings} bookingDatesById={bookingDatesById} />
           )}
         </CardContent>
       </Card>

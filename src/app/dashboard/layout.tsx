@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session) redirect("/login?next=/dashboard");
 
   return (
-    <div className="min-h-screen bg-muted/30 lg:flex">
+    <div className="min-h-screen bg-background lg:flex">
       <aside className="hidden w-64 shrink-0 flex-col border-e border-border bg-background lg:flex">
         <div className="flex h-16 items-center border-b border-border px-5">
           <Logo />

@@ -8,16 +8,18 @@ import type { ActionResult } from "@/lib/auth/actions";
 export async function linkChaletSeasonalPriceAction(
   chaletId: number,
   seasonId: number,
-  price: number,
+  morningPrice: number,
+  eveningPrice: number,
+  fullDayPrice: number,
 ): Promise<ActionResult> {
   if (!seasonId) {
     return { success: false, message: "Choose a season to add." };
   }
-  if (!Number.isFinite(price) || price <= 0) {
-    return { success: false, message: "Enter a price greater than zero." };
+  if ([morningPrice, eveningPrice, fullDayPrice].every((p) => !Number.isFinite(p) || p <= 0)) {
+    return { success: false, message: "Enter at least one price greater than zero." };
   }
   try {
-    await linkChaletSeasonalPrice(chaletId, { seasonId, price });
+    await linkChaletSeasonalPrice(chaletId, { seasonId, morningPrice, eveningPrice, fullDayPrice });
   } catch (err) {
     if (err instanceof ApiError) return { success: false, message: err.message };
     return { success: false, message: "An unexpected error occurred while adding the seasonal price." };
