@@ -85,12 +85,12 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isAuthPage = pathname === "/login";
   const isDashboard = pathname.startsWith("/dashboard");
   const isMyBookings = pathname.startsWith("/my-bookings");
   const isAccount = pathname.startsWith("/account");
 
-  // Logged-in users shouldn't see the login/register screens again.
+  // Logged-in users shouldn't see the login screen again.
   if (isAuthPage && session) {
     return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
@@ -194,9 +194,22 @@ export async function middleware(request: NextRequest) {
     return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
+  // Approving a chalet image is SuperAdmin/SystemAdmin only per the API's own
+  // role rules — a ChaletAdmin uploads but never approves, even for their own
+  // chalet, so this cross-chalet review queue is staff-only too.
+  if (pathname.startsWith("/dashboard/pending-images") && !isStaffAdmin) {
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
+  }
+
+  // Managing advertisements/categories is SuperAdmin/SystemAdmin only per
+  // the API's own role rules — no ChaletAdmin involvement at all.
+  if (pathname.startsWith("/dashboard/advertisements") && !isStaffAdmin) {
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
+  }
+
   return finish(NextResponse.next());
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/my-bookings/:path*", "/account/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/my-bookings/:path*", "/account/:path*", "/login"],
 };

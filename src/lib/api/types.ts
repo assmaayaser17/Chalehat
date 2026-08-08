@@ -26,33 +26,6 @@ export const DASHBOARD_ROLES: UserRole[] = ["SuperAdmin", "SystemAdmin", "Chalet
 
 // ---------- Auth: /api/Auth ----------
 
-export interface RegisterRequest {
-  fullName: string;
-  userName: string;
-  phoneNumber: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
-/**
- * POST /api/Auth/register's response — confirmed via a live call:
- * `{success, message: {userId, message}}`. A verification SMS is sent
- * immediately on register, and `POST /api/Auth/login` rejects the account
- * (`"You must verify your phone number before logging in."`) until
- * `verifyOtp` succeeds — also confirmed live.
- */
-export interface RegisterResponse {
-  userId?: string;
-  message?: string;
-}
-
-/** POST /api/Auth/verify-otp — no auth required. */
-export interface VerifyOtpRequest {
-  userId: string;
-  code: string;
-}
-
 export interface LoginRequest {
   Identifier: string;
   password: string;
@@ -230,6 +203,52 @@ export interface CreateSeasonRequest {
   priority: number;
 }
 
+// ---------- Advertisement Categories: /api/advertisement-categories ----------
+
+/** A category ads are filed under (e.g. "Restaurants") — same shape as `Amenity`. */
+export interface AdvertisementCategory {
+  id: number;
+  name: string;
+  iconUrl: string | null;
+}
+
+export interface CreateAdvertisementCategoryRequest {
+  name: string;
+  iconUrl: string;
+}
+
+// ---------- Advertisements: /api/advertisements ----------
+
+/**
+ * Response shape is undocumented (no GET example in the API docs this was
+ * built from) — read defensively. `images` is assumed to be either an array
+ * of URL strings or of `{ url }` objects; `resolveAdvertisementImages` in
+ * `lib/api/advertisements.ts` normalizes either shape. Verify against a live
+ * call if ads render without photos.
+ */
+export interface Advertisement {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  categoryId: number;
+  categoryName?: string;
+  location: string;
+  phoneNumber: string;
+  images?: unknown;
+  createdAt?: string;
+}
+
+/** PUT /api/advertisements/{id} — no `images` field; the docs only show create as accepting photos. */
+export interface UpdateAdvertisementRequest {
+  name: string;
+  description: string;
+  price: number;
+  categoryId: number;
+  location: string;
+  phoneNumber: string;
+}
+
 // ---------- Chalet Seasonal Prices: /api/chalet/{id}/seasonal-prices ----------
 
 /**
@@ -337,6 +356,16 @@ export interface BookingPreview {
  * as an empty array on this endpoint even for real Confirmed bookings — the
  * per-day breakdown only actually shows up in the chalet's calendar endpoint,
  * see `buildBookingDatesById`.
+ *
+ * Also confirmed via a live call against `GET /api/Booking/my-bookings`
+ * (the customer-facing list): `days` is `[]` there too for every booking
+ * regardless of status, and `createdAt` is omitted from the payload
+ * entirely — not `null`, just not a key on the object. There is no
+ * customer-usable endpoint to backfill either (`GET /api/Booking/{id}`
+ * 404s — confirmed by probing the live API directly), so a booking card
+ * built from this endpoint cannot show stay dates or a "booked on" date
+ * until the backend actually populates them here. Don't rely on either
+ * field without a fallback.
  */
 export interface Booking {
   id: number;

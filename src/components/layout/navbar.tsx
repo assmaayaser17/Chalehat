@@ -30,11 +30,8 @@ export async function Navbar() {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/10 hover:text-accent-300">
-        <Link href="/login">Log in</Link>
-      </Button>
       <Button size="sm" asChild className="bg-accent-400 text-primary-900 shadow-sm hover:bg-accent-300">
-        <Link href="/register">Sign up</Link>
+        <Link href="/login">Log in</Link>
       </Button>
     </div>
   );
@@ -55,6 +52,9 @@ export async function Navbar() {
             className="text-sm font-medium text-white/90 transition-colors hover:text-accent-300"
           >
             Chalets
+          </Link>
+          <Link href="/ads" className="text-sm font-medium text-white/90 transition-colors hover:text-accent-300">
+            Ads
           </Link>
         </nav>
 

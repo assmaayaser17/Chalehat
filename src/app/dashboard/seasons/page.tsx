@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarRange, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { SeasonsTable } from "@/components/admin/seasons-table";
 import { getAllSeasons } from "@/lib/api/season";
-import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Seasons" };
 
@@ -49,30 +47,7 @@ export default async function SeasonsPage() {
               }
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Start date</TableHead>
-                  <TableHead>End date</TableHead>
-                  <TableHead>Priority</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {seasons.map((season) => (
-                  <TableRow key={season.id}>
-                    <TableCell dir="auto" className="font-medium">
-                      {season.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(season.startDate)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(season.endDate)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{season.priority}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <SeasonsTable initialSeasons={seasons} />
           )}
         </CardContent>
       </Card>

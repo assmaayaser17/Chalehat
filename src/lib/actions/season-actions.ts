@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { createSeason } from "@/lib/api/season";
+import { createSeason, deleteSeason } from "@/lib/api/season";
 import { ApiError } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { SeasonFormValues } from "@/lib/validations/season";
@@ -29,4 +29,26 @@ export async function createSeasonAction(values: SeasonFormValues): Promise<Acti
   revalidateTag("seasons");
   revalidatePath("/dashboard/seasons");
   redirect("/dashboard/seasons");
+}
+
+export async function deleteSeasonAction(id: number): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { success: false, message: "You must log in first." };
+
+  // Matches the API's own role rule for this endpoint — SuperAdmin or
+  // SystemAdmin, unlike create which is SuperAdmin only.
+  if (session.role !== "SuperAdmin" && session.role !== "SystemAdmin") {
+    return { success: false, message: "You're not authorized to delete seasons." };
+  }
+
+  try {
+    await deleteSeason(id);
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    return { success: false, message: "An unexpected error occurred while deleting the season." };
+  }
+
+  revalidateTag("seasons");
+  revalidatePath("/dashboard/seasons");
+  return { success: true };
 }

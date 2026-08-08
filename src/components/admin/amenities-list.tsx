@@ -73,7 +73,7 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
         <TableHeader>
           <TableRow>
             <TableHead>Amenity</TableHead>
-            <TableHead>Icon URL</TableHead>
+            <TableHead>Icon</TableHead>
             <TableHead className="w-24 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -88,17 +88,7 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                     {isEditing ? (
                       <Input dir="auto" value={editName} onChange={(e) => setEditName(e.target.value)} />
                     ) : (
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-100 text-accent-700">
-                          {amenity.iconUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- icon URLs come from arbitrary admin-entered hosts, not our media backend
-                            <img src={amenity.iconUrl} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                        </span>
-                        <span dir="auto">{amenity.name}</span>
-                      </div>
+                      <span dir="auto">{amenity.name}</span>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -109,7 +99,14 @@ export function AmenitiesList({ initialAmenities }: { initialAmenities: Amenity[
                         placeholder="https://..."
                       />
                     ) : (
-                      amenity.iconUrl ?? "—"
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-100 text-accent-700">
+                        {amenity.iconUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- icon URLs come from arbitrary admin-entered hosts, not our media backend
+                          <img src={amenity.iconUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>

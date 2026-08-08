@@ -1,32 +1,13 @@
 import "server-only";
 
-import { apiFetch, authFetch, unwrapObject } from "@/lib/api/client";
+import { apiFetch, authFetch } from "@/lib/api/client";
 import type {
   AuthTokenResponse,
   ChangePasswordRequest,
   ForgotPasswordRequest,
   LoginRequest,
-  RegisterRequest,
-  RegisterResponse,
   ResetPasswordRequest,
-  VerifyOtpRequest,
 } from "@/lib/api/types";
-
-/**
- * POST /api/Auth/register — no auth required. Returns the new account's
- * `userId` so the caller can chain straight into `verifyOtp` — the backend
- * sends a verification SMS on register and blocks login until it's
- * confirmed, see `RegisterResponse`'s doc comment.
- */
-export async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
-  const result = await apiFetch<unknown>("/api/Auth/register", { method: "POST", body: data, cache: "no-store" });
-  return unwrapObject<RegisterResponse>(result);
-}
-
-/** POST /api/Auth/verify-otp — no auth required. Confirms the SMS code sent at registration; required before the account can log in. */
-export async function verifyOtp(data: VerifyOtpRequest): Promise<unknown> {
-  return apiFetch("/api/Auth/verify-otp", { method: "POST", body: data, cache: "no-store" });
-}
 
 /** POST /api/Auth/login — no auth required, returns the access/refresh token pair. */
 export async function loginUser(data: LoginRequest): Promise<AuthTokenResponse> {

@@ -2,7 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CalendarRange, Home, LayoutDashboard, PlusCircle, Sparkles, Star, Users } from "lucide-react";
+import {
+  BarChart3,
+  CalendarRange,
+  Home,
+  ImageUp,
+  LayoutDashboard,
+  Megaphone,
+  PlusCircle,
+  Sparkles,
+  Star,
+  Tag,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAFF_MANAGEMENT_ROLES, type UserRole } from "@/lib/api/types";
 
@@ -46,6 +58,29 @@ function navSectionsForRole(role: UserRole): NavSection[] {
     sections.push({
       label: "Reviews",
       items: [{ href: "/dashboard/customer-reviews", label: "Customer Reviews", icon: Star }],
+    });
+  }
+
+  // Approving a chalet image is SuperAdmin/SystemAdmin only per the API's
+  // own role rules — a ChaletAdmin uploads but never approves, even for
+  // their own chalet.
+  if (isStaffAdmin) {
+    sections.push({
+      label: "Photos",
+      items: [{ href: "/dashboard/pending-images", label: "Pending Images", icon: ImageUp }],
+    });
+  }
+
+  // Local-business ads shown to customers — SuperAdmin/SystemAdmin only per
+  // the API's own role rules, no ChaletAdmin involvement.
+  if (isStaffAdmin) {
+    sections.push({
+      label: "Advertisements",
+      items: [
+        { href: "/dashboard/advertisements", label: "Advertisements", icon: Megaphone },
+        { href: "/dashboard/advertisements/new", label: "Add advertisement", icon: PlusCircle },
+        { href: "/dashboard/advertisements/categories", label: "Ad Categories", icon: Tag },
+      ],
     });
   }
 

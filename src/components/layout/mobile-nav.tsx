@@ -10,6 +10,7 @@ import { Logo } from "@/components/layout/logo";
 const links = [
   { href: "/", label: "Home" },
   { href: "/#chalets", label: "Chalets" },
+  { href: "/ads", label: "Ads" },
 ];
 
 /** Client Component: the Sheet needs open/close state — isolated here so the rest of the navbar stays server-rendered. */

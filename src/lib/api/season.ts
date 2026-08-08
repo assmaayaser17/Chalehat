@@ -23,3 +23,11 @@ export async function createSeason(data: CreateSeasonRequest): Promise<Season> {
   });
   return unwrapObject<Season>(result);
 }
+
+/** DELETE /api/Season/{id} — SuperAdmin/SystemAdmin only. */
+export async function deleteSeason(id: number): Promise<void> {
+  await authFetch<unknown>(`/api/Season/${id}`, {
+    method: "DELETE",
+    cache: "no-store",
+  });
+}

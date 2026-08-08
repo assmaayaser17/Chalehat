@@ -16,8 +16,25 @@ import {
 } from "@/lib/actions/chalet-image-actions";
 import type { ChaletImage } from "@/lib/api/types";
 
+interface ChaletImagesManagerProps {
+  chaletId: number;
+  initialImages: ChaletImage[];
+  /** Owning ChaletAdmin only, per the API's own role rules — see the page's doc comment. */
+  canUpload: boolean;
+  /** SuperAdmin/SystemAdmin only. */
+  canApprove: boolean;
+  /** SuperAdmin, SystemAdmin, or the owning ChaletAdmin. */
+  canDelete: boolean;
+}
+
 /** Client Component: upload form + gallery grid with approve/set-cover/delete, all via server actions + router.refresh to resync. */
-export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: number; initialImages: ChaletImage[] }) {
+export function ChaletImagesManager({
+  chaletId,
+  initialImages,
+  canUpload,
+  canApprove,
+  canDelete,
+}: ChaletImagesManagerProps) {
   const router = useRouter();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [images, setImages] = React.useState(initialImages);
@@ -114,23 +131,29 @@ export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: num
     <div className="space-y-6">
       {error && <Alert variant="destructive">{error}</Alert>}
 
-      <form
-        onSubmit={handleUpload}
-        className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-4"
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 file:transition-colors hover:file:bg-primary-100"
-        />
-        <Button type="submit" loading={isUploading}>
-          <ImageUp /> Upload image
-        </Button>
-      </form>
+      {canUpload && (
+        <form
+          onSubmit={handleUpload}
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-4"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 file:transition-colors hover:file:bg-primary-100"
+          />
+          <Button type="submit" loading={isUploading}>
+            <ImageUp /> Upload image
+          </Button>
+        </form>
+      )}
 
       {images.length === 0 ? (
-        <EmptyState icon={ImageUp} title="No images uploaded yet" description="Upload a photo to get started." />
+        <EmptyState
+          icon={ImageUp}
+          title="No images uploaded yet"
+          description={canUpload ? "Upload a photo to get started." : "The chalet owner hasn't uploaded any photos yet."}
+        />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {images.map((image) => {
@@ -157,7 +180,7 @@ export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: num
                   )}
                 </div>
                 <div className="flex flex-col gap-1 p-2">
-                  {!image.isApproved && (
+                  {!image.isApproved && canApprove && (
                     <Button
                       type="button"
                       variant="outline"
@@ -183,17 +206,19 @@ export function ChaletImagesManager({ chaletId, initialImages }: { chaletId: num
                       Set as cover
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="justify-start text-destructive hover:text-destructive"
-                    disabled={isPending}
-                    onClick={() => handleDelete(image.id)}
-                  >
-                    {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    Delete
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="justify-start text-destructive hover:text-destructive"
+                      disabled={isPending}
+                      onClick={() => handleDelete(image.id)}
+                    >
+                      {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             );

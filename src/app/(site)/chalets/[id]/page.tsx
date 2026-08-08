@@ -339,12 +339,18 @@ export default async function ChaletDetailPage({ params }: PageProps) {
 
               <Separator />
 
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CalendarClock className="h-4 w-4 shrink-0 text-primary-600" />
-                Check-in {chalet.checkInTime.slice(0, 5)} — Check-out {chalet.checkOutTime.slice(0, 5)}
-              </div>
+              {(chalet.checkInTime || chalet.checkOutTime) && (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CalendarClock className="h-4 w-4 shrink-0 text-primary-600" />
+                    {chalet.checkInTime && `Check-in ${chalet.checkInTime.slice(0, 5)}`}
+                    {chalet.checkInTime && chalet.checkOutTime && " — "}
+                    {chalet.checkOutTime && `Check-out ${chalet.checkOutTime.slice(0, 5)}`}
+                  </div>
 
-              <Separator />
+                  <Separator />
+                </>
+              )}
 
               {/* Only the role crosses the client boundary — never the session
                   itself, which carries the access/refresh tokens. */}
