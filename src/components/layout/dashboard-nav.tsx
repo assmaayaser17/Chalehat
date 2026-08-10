@@ -14,6 +14,7 @@ import {
   Star,
   Tag,
   Users,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAFF_MANAGEMENT_ROLES, type UserRole } from "@/lib/api/types";
@@ -51,14 +52,28 @@ function navSectionsForRole(role: UserRole): NavSection[] {
     });
   }
 
+  // Browsing/blocking/role-management across every user — SuperAdmin/SystemAdmin
+  // only per the API's own role rules, no ChaletAdmin involvement.
+  if (isStaffAdmin) {
+    sections.push({
+      label: "Users",
+      items: [{ href: "/dashboard/users", label: "Users", icon: UserCog }],
+    });
+  }
+
   // Admin-authored reviews of customer behavior — a ChaletAdmin gets a
   // scoped view (their own customers only), a SuperAdmin/SystemAdmin sees
   // everything, both confirmed live against the API.
   if (isStaffAdmin || isChaletAdmin) {
-    sections.push({
-      label: "Reviews",
-      items: [{ href: "/dashboard/customer-reviews", label: "Customer Reviews", icon: Star }],
-    });
+    const items: NavItem[] = [{ href: "/dashboard/customer-reviews", label: "Customer Reviews", icon: Star }];
+    // Per-customer rating rollup — needs `getAllUsers`, which is
+    // SuperAdmin/SystemAdmin only, so a ChaletAdmin never sees this (they
+    // already get the same numbers scoped to their own customers, inline on
+    // their chalet's bookings page).
+    if (isStaffAdmin) {
+      items.push({ href: "/dashboard/customer-stats", label: "Customer Stats", icon: BarChart3 });
+    }
+    sections.push({ label: "Reviews", items });
   }
 
   // Approving a chalet image is SuperAdmin/SystemAdmin only per the API's

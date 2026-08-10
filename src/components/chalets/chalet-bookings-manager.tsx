@@ -18,14 +18,15 @@ import {
   recordBookingPaymentAction,
   rejectBookingAction,
 } from "@/lib/actions/chalet-booking-actions";
-import { getCustomerBookingStatsAction } from "@/lib/actions/customer-review-actions";
+import { addCustomerReviewAction, getCustomerBookingStatsAction } from "@/lib/actions/customer-review-actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Booking, CustomerBalance, CustomerBookingStats } from "@/lib/api/types";
 
 type PendingAction =
   | { bookingId: number; type: "approve"; conflicts: Booking[] }
   | { bookingId: number; type: "reject" }
-  | { bookingId: number; type: "pay" };
+  | { bookingId: number; type: "pay" }
+  | { bookingId: number; type: "review" };
 
 const DEFAULT_CONFLICT_REASON = "Another booking for the same dates was approved.";
 
@@ -80,6 +81,11 @@ export function ChaletBookingsManager({
 
   const [paymentAmount, setPaymentAmount] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState("Cash");
+
+  const [reviewCleanliness, setReviewCleanliness] = React.useState("3");
+  const [reviewDisturbance, setReviewDisturbance] = React.useState("3");
+  const [reviewPaymentReliability, setReviewPaymentReliability] = React.useState("3");
+  const [reviewNotes, setReviewNotes] = React.useState("");
 
   const [balanceFor, setBalanceFor] = React.useState<number | null>(null);
   const [balance, setBalance] = React.useState<CustomerBalance | null>(null);
@@ -165,6 +171,38 @@ export function ChaletBookingsManager({
     setIsSaving(true);
     try {
       const result = await recordBookingPaymentAction(bookingId, chaletId, Number(paymentAmount) || 0, paymentMethod);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      setPendingAction(null);
+      router.refresh();
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function startReview(bookingId: number) {
+    setError(null);
+    setReviewCleanliness("3");
+    setReviewDisturbance("3");
+    setReviewPaymentReliability("3");
+    setReviewNotes("");
+    setPendingAction({ bookingId, type: "review" });
+  }
+
+  async function confirmReview(bookingId: number, userId: string) {
+    setError(null);
+    setIsSaving(true);
+    try {
+      const result = await addCustomerReviewAction(
+        userId,
+        chaletId,
+        Number(reviewCleanliness) || 0,
+        Number(reviewDisturbance) || 0,
+        Number(reviewPaymentReliability) || 0,
+        reviewNotes,
+      );
       if (!result.success) {
         setError(result.message);
         return;
@@ -279,6 +317,11 @@ export function ChaletBookingsManager({
                             Pay
                           </Button>
                         )}
+                        {booking.userId && !actionHere && (
+                          <Button type="button" size="sm" variant="ghost" onClick={() => startReview(booking.id)}>
+                            Review
+                          </Button>
+                        )}
                         {booking.userId && (
                           <Button
                             type="button"
@@ -323,21 +366,19 @@ export function ChaletBookingsManager({
                                 </div>
                               )}
                               {bookingStats && (
-                                <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
-                                  <span>{bookingStats.totalBookings ?? 0} bookings total</span>
-                                  <span>{bookingStats.confirmedCount ?? 0} confirmed</span>
-                                  <span>{bookingStats.completedCount ?? 0} completed</span>
-                                  <span>{bookingStats.cancelledCount ?? 0} cancelled</span>
-                                  <span>{bookingStats.rejectedCount ?? 0} rejected</span>
-                                  {(bookingStats.averageCleanlinessRating ?? 0) > 0 && (
-                                    <span>Cleanliness avg {bookingStats.averageCleanlinessRating?.toFixed(1)}</span>
-                                  )}
-                                  {(bookingStats.averageDisturbanceRating ?? 0) > 0 && (
-                                    <span>Disturbance avg {bookingStats.averageDisturbanceRating?.toFixed(1)}</span>
-                                  )}
-                                  {(bookingStats.averagePaymentReliabilityRating ?? 0) > 0 && (
-                                    <span>Payment reliability avg {bookingStats.averagePaymentReliabilityRating?.toFixed(1)}</span>
-                                  )}
+                                <div className="space-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
+                                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                    {(bookingStats.cleanlinessRating ?? 0) > 0 && (
+                                      <span>Cleanliness {bookingStats.cleanlinessRating}/5</span>
+                                    )}
+                                    {(bookingStats.disturbanceRating ?? 0) > 0 && (
+                                      <span>Disturbance {bookingStats.disturbanceRating}/5</span>
+                                    )}
+                                    {(bookingStats.paymentReliabilityRating ?? 0) > 0 && (
+                                      <span>Payment reliability {bookingStats.paymentReliabilityRating}/5</span>
+                                    )}
+                                  </div>
+                                  {bookingStats.adminNotes && <p dir="auto">{bookingStats.adminNotes}</p>}
                                 </div>
                               )}
                               {!balance && !bookingStats && !balanceError && (
@@ -385,6 +426,80 @@ export function ChaletBookingsManager({
                           >
                             <X className="h-4 w-4" /> Cancel
                           </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {actionHere?.type === "review" && (
+                    <TableRow>
+                      <TableCell colSpan={6}>
+                        <div className="space-y-3 rounded-md bg-muted p-3">
+                          <div className="flex flex-wrap items-end gap-3">
+                            <div className="w-32 space-y-1.5">
+                              <Label htmlFor={`review-cleanliness-${booking.id}`}>Cleanliness (1–5)</Label>
+                              <Input
+                                id={`review-cleanliness-${booking.id}`}
+                                type="number"
+                                min={1}
+                                max={5}
+                                value={reviewCleanliness}
+                                onChange={(e) => setReviewCleanliness(e.target.value)}
+                              />
+                            </div>
+                            <div className="w-32 space-y-1.5">
+                              <Label htmlFor={`review-disturbance-${booking.id}`}>Disturbance (1–5)</Label>
+                              <Input
+                                id={`review-disturbance-${booking.id}`}
+                                type="number"
+                                min={1}
+                                max={5}
+                                value={reviewDisturbance}
+                                onChange={(e) => setReviewDisturbance(e.target.value)}
+                              />
+                            </div>
+                            <div className="w-44 space-y-1.5">
+                              <Label htmlFor={`review-payment-${booking.id}`}>Payment reliability (1–5)</Label>
+                              <Input
+                                id={`review-payment-${booking.id}`}
+                                type="number"
+                                min={1}
+                                max={5}
+                                value={reviewPaymentReliability}
+                                onChange={(e) => setReviewPaymentReliability(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`review-notes-${booking.id}`}>Notes</Label>
+                            <Textarea
+                              id={`review-notes-${booking.id}`}
+                              dir="auto"
+                              rows={2}
+                              value={reviewNotes}
+                              onChange={(e) => setReviewNotes(e.target.value)}
+                              placeholder="Customer was very cooperative and payment was completed on time"
+                            />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              type="button"
+                              size="sm"
+                              loading={isSaving}
+                              onClick={() => confirmReview(booking.id, booking.userId as string)}
+                            >
+                              <Check className="h-4 w-4" /> Submit review
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={isSaving}
+                              onClick={() => setPendingAction(null)}
+                            >
+                              <X className="h-4 w-4" /> Cancel
+                            </Button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>

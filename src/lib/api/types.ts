@@ -105,6 +105,25 @@ export interface ApiUser {
   phoneNumber?: string;
   role: UserRole;
   createdAt?: string;
+  isBlocked?: boolean;
+  blockReason?: string | null;
+}
+
+/** GET /api/admin/users?role&isBlocked&search — SuperAdmin/SystemAdmin only. All filters optional. */
+export interface GetAllUsersFilters {
+  role?: UserRole;
+  isBlocked?: boolean;
+  search?: string;
+}
+
+/** PATCH /api/admin/users/{id}/toggle-block — SuperAdmin/SystemAdmin only; a SystemAdmin may only block Customers, per the API docs. */
+export interface ToggleUserBlockRequest {
+  reason: string;
+}
+
+/** PATCH /api/admin/users/{id}/role — SuperAdmin only. */
+export interface ChangeUserRoleRequest {
+  newRole: UserRole;
 }
 
 // ---------- Chalet: /api/Chalet ----------
@@ -572,22 +591,27 @@ export interface CustomerReviewRecord {
   [key: string]: unknown;
 }
 
-/** GET /api/admin/users/{id}/reviews/booking-stats — confirmed via a live call. */
+/**
+ * POST /api/admin/users/{id}/reviews — SuperAdmin/SystemAdmin/ChaletAdmin.
+ * A ChaletAdmin may only review a customer for a booking made at their own
+ * chalet, per the API docs — enforced backend-side; the app only ever
+ * surfaces this action from a chalet's own bookings page, where that's
+ * already guaranteed by construction.
+ */
+export interface AddCustomerReviewRequest {
+  chaletId: number;
+  cleanlinessRating: number;
+  disturbanceRating: number;
+  paymentReliabilityRating: number;
+  notes: string;
+}
+
+/** GET /api/admin/users/{id}/reviews/booking-stats — confirmed via a live call. SuperAdmin/SystemAdmin/ChaletAdmin. */
 export interface CustomerBookingStats {
-  userId?: string;
-  fullName?: string;
-  phoneNumber?: string | null;
-  totalBookings?: number;
-  confirmedCount?: number;
-  rejectedCount?: number;
-  cancelledCount?: number;
-  completedCount?: number;
-  pendingCount?: number;
-  totalPaidAmount?: number;
-  averageCleanlinessRating?: number;
-  averageDisturbanceRating?: number;
-  averagePaymentReliabilityRating?: number;
-  reviews?: CustomerReviewRecord[];
+  cleanlinessRating?: number;
+  disturbanceRating?: number;
+  paymentReliabilityRating?: number;
+  adminNotes?: string;
 }
 
 // ---------- Generic API envelope ----------

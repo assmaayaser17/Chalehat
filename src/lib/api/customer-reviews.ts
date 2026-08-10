@@ -1,7 +1,17 @@
 import "server-only";
 
 import { authFetch, unwrapObject, unwrapPaginated } from "@/lib/api/client";
-import type { CustomerBookingStats, CustomerReviewRecord, PaginatedResult } from "@/lib/api/types";
+import type { AddCustomerReviewRequest, CustomerBookingStats, CustomerReviewRecord, PaginatedResult } from "@/lib/api/types";
+
+/** POST /api/admin/users/{userId}/reviews — SuperAdmin/SystemAdmin/ChaletAdmin. See `AddCustomerReviewRequest`. */
+export async function addCustomerReview(userId: string, data: AddCustomerReviewRequest): Promise<CustomerReviewRecord> {
+  const result = await authFetch<unknown>(`/api/admin/users/${userId}/reviews`, {
+    method: "POST",
+    body: data,
+    cache: "no-store",
+  });
+  return unwrapObject<CustomerReviewRecord>(result);
+}
 
 /** GET /api/admin/users/{userId}/reviews/booking-stats — confirmed via a live call. SuperAdmin / SystemAdmin / ChaletAdmin. */
 export async function getCustomerBookingStats(userId: string): Promise<CustomerBookingStats> {
