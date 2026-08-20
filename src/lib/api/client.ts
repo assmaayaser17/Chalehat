@@ -8,12 +8,15 @@ const API_BASE_URL = process.env.API_BASE_URL || "https://chalehat.onrender.com"
 /**
  * Resolves a media path returned by the API into an absolute, reachable URL.
  * The API is inconsistent: relative paths ("/uploads/...") on chalet reads,
- * but absolute URLs pointing at its own unreachable dev host
- * ("https://localhost:7041/...") from the images endpoints. Stripping any
- * origin and re-resolving against our real `API_BASE_URL` handles both.
+ * absolute URLs pointing at its own unreachable dev host
+ * ("https://localhost:7041/...") on some endpoints, and (for chalet images)
+ * real absolute Cloudinary URLs that are already correct as-is. Only the
+ * first two need rewriting — a genuine external absolute URL must be left
+ * alone, or it gets corrupted into a nonexistent path on our own API host.
  */
 export function resolveMediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
+  if (/^https?:\/\/(?!localhost|127\.0\.0\.1)/i.test(path)) return path;
   const relative = path.replace(/^https?:\/\/[^/]+/i, "");
   return `${API_BASE_URL}${relative.startsWith("/") ? relative : `/${relative}`}`;
 }

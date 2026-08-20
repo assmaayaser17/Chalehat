@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BOOKING_TYPES } from "@/lib/api/types";
+import { phoneNumberSchema } from "@/lib/validations/auth";
 
 // The native `<input type="time">` returns "HH:mm" (no seconds) unless the
 // form sets a `step` that enables a seconds picker, which we don't want in
@@ -36,7 +37,7 @@ export const createChaletSchema = z
     checkInTime: timeOfDaySchema,
     checkOutTime: timeOfDaySchema,
     cancellationPolicy: z.string().min(3, "Cancellation policy is required"),
-    whatsAppNumber: z.string().regex(/^0\d{8,9}$/, "Invalid WhatsApp number"),
+    whatsAppNumber: phoneNumberSchema,
     allowedBookingTypes: z.array(z.enum(BOOKING_TYPES)).min(1, "Choose at least one booking type"),
     ownerAdminId: z.string().optional(),
   })

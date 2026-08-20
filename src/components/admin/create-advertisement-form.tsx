@@ -109,7 +109,7 @@ export function CreateAdvertisementForm({ categories }: { categories: Advertisem
       </FormField>
 
       <FormField id="phoneNumber" label="Phone number" error={errors.phoneNumber?.message}>
-        <Input id="phoneNumber" placeholder="0591234567" {...register("phoneNumber")} />
+        <Input id="phoneNumber" placeholder="+970591234567" {...register("phoneNumber")} />
       </FormField>
 
       <FormField id="images" label="Photos (optional)">

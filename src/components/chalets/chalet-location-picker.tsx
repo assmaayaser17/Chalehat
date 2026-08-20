@@ -48,7 +48,16 @@ export function ChaletLocationPicker({
 }) {
   const hasPosition =
     typeof latitude === "number" && typeof longitude === "number" && !Number.isNaN(latitude) && !Number.isNaN(longitude);
-  const position: [number, number] = hasPosition ? [latitude, longitude] : DEFAULT_CENTER;
+  // Memoized so the Marker only gets a new `position` reference (and calls
+  // Leaflet's `setLatLng`) when the coordinates actually change — not on
+  // every unrelated re-render of the (large, single-`watch()`) parent form.
+  // Without this, a `setLatLng` fired while the marker's own drag handler
+  // was still tearing down its internal DOM position cache is what threw
+  // "undefined is not an object (evaluating 'el._leaflet_pos')".
+  const position: [number, number] = React.useMemo(
+    () => (hasPosition ? [latitude as number, longitude as number] : DEFAULT_CENTER),
+    [hasPosition, latitude, longitude],
+  );
 
   return (
     <div className="space-y-2">

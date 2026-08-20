@@ -38,7 +38,7 @@ export function ResetPasswordForm({ defaultPhoneNumber }: { defaultPhoneNumber?:
       {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
       <FormField id="phoneNumber" label="Phone number" error={errors.phoneNumber?.message}>
-        <Input id="phoneNumber" inputMode="tel" placeholder="0599000000" {...register("phoneNumber")} />
+        <Input id="phoneNumber" inputMode="tel" placeholder="+970599000000" {...register("phoneNumber")} />
       </FormField>
 
       <FormField id="code" label="Reset code" error={errors.code?.message}>

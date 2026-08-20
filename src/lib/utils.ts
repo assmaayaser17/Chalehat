@@ -10,8 +10,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Formats a number as Jordanian/Palestinian-style currency (JOD/ILS agnostic, just "amount + unit"). */
-export function formatCurrency(amount: number, currency = "JOD") {
+/** Formats a number as Israeli new shekel currency (the API has no currency field — every amount is just a raw number). */
+export function formatCurrency(amount: number, currency = "NIS") {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,

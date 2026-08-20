@@ -7,10 +7,13 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 
-// The backend's own examples mix local (0599000000) and international
-// (+970599000000) formats for phone numbers across different endpoints, so
-// this stays lenient rather than picking one and rejecting the other.
-const phoneNumberSchema = z.string().regex(/^\+?\d{9,13}$/, "Invalid phone number");
+// Matches the backend's own validation exactly — confirmed live against
+// POST /api/Auth/register, which 400s with this same message for anything
+// else (including the local "0599..." format the Postman collection's own
+// stale examples still use).
+export const phoneNumberSchema = z
+  .string()
+  .regex(/^(\+970|\+972|00970|00972)5\d{8}$/, "Invalid phone number. Must start with +970, +972, 00970, or 00972");
 
 const newPasswordSchema = z
   .string()

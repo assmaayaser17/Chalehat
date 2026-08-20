@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createChaletSchema, type CreateChaletFormValues } from "@/lib/validations/chalet";
 import { createChaletAction } from "@/lib/actions/chalet-actions";
@@ -41,7 +41,6 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateChaletFormValues>({
@@ -62,8 +61,11 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
     if (!result.success) setServerError(result.message);
   }
 
-  const latitude = watch("latitude");
-  const longitude = watch("longitude");
+  // `useWatch` (not plain `watch`) so only this scoped subscription
+  // re-renders when lat/lng change, instead of every keystroke anywhere in
+  // this large form re-rendering the map with a fresh `position` reference.
+  const latitude = useWatch({ control, name: "latitude" });
+  const longitude = useWatch({ control, name: "longitude" });
 
   function handleLocationChange(lat: number, lng: number) {
     setValue("latitude", lat, { shouldValidate: true, shouldDirty: true });
@@ -193,7 +195,7 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
       <section className="space-y-4 border-t border-border pt-8">
         <h2 className="text-sm font-semibold text-primary-700">Contact & policies</h2>
         <FormField id="whatsAppNumber" label="WhatsApp number" error={errors.whatsAppNumber?.message}>
-          <Input id="whatsAppNumber" placeholder="0591234567" {...register("whatsAppNumber")} />
+          <Input id="whatsAppNumber" placeholder="+970591234567" {...register("whatsAppNumber")} />
         </FormField>
         <FormField id="cancellationPolicy" label="Cancellation policy" error={errors.cancellationPolicy?.message}>
           <Textarea id="cancellationPolicy" dir="auto" rows={3} {...register("cancellationPolicy")} />
