@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
   approveBooking,
+  getBookingById,
   getBookingConflicts,
   getCustomerBalance,
   markExpiredBookingsCompleted,
@@ -12,6 +13,19 @@ import {
 import { ApiError } from "@/lib/api/client";
 import type { ActionResult } from "@/lib/auth/actions";
 import type { Booking, CustomerBalance } from "@/lib/api/types";
+
+export type GetBookingResult = { success: true; booking: Booking } | { success: false; message: string };
+
+/** Used by `NotificationBell` to resolve a notification's `relatedBookingId` down to a `chaletId` for the deep link. */
+export async function getBookingByIdAction(bookingId: number): Promise<GetBookingResult> {
+  try {
+    const booking = await getBookingById(bookingId);
+    return { success: true, booking };
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    return { success: false, message: "Couldn't load the booking." };
+  }
+}
 
 export async function approveBookingAction(
   bookingId: number,

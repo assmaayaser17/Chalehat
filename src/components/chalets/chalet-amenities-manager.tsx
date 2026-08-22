@@ -80,7 +80,11 @@ export function ChaletAmenitiesManager({
 
       <div className="space-y-3 border-t border-border pt-4">
         <h3 className="text-sm font-semibold text-foreground">Add more amenities</h3>
-        {available.length === 0 ? (
+        {allAmenities.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No amenities exist yet — a SuperAdmin or SystemAdmin needs to create some before you can link any here.
+          </p>
+        ) : available.length === 0 ? (
           <p className="text-sm text-muted-foreground">Every amenity is already linked to this chalet.</p>
         ) : (
           <>

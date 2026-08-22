@@ -36,6 +36,33 @@ export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
   Event: "Event",
 };
 
+/**
+ * Maps a booking day's `period` to a display label. Confirmed live as a
+ * string ("Morning"/"Evening"/"FullDay") on `GET /api/Booking/chalet/{id}`.
+ * Some older bookings reportedly return a bare numeric string instead (see
+ * `ChaletCalendarSlot`'s doc comment) — an unrecognized value falls back to
+ * showing the raw value rather than guessing at a mapping.
+ */
+export function formatBookingPeriod(period: string): string {
+  switch (period) {
+    case "Morning":
+      return "Morning";
+    case "Evening":
+      return "Evening";
+    case "FullDay":
+      return "Full day";
+    default:
+      return period;
+  }
+}
+
+/** Summarizes a booking's day periods into one short label — e.g. "Full day" when every day matches, or a de-duplicated list ("Full day, Morning") when they differ. */
+export function summarizeBookingPeriods(days: { period: string }[] | undefined): string {
+  if (!days || days.length === 0) return "—";
+  const labels = Array.from(new Set(days.map((d) => formatBookingPeriod(d.period))));
+  return labels.join(", ");
+}
+
 /** .NET `DayOfWeek` numbering (Sunday = 0 ... Saturday = 6) — used to build the weekday-price create request. */
 export const WEEKDAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 

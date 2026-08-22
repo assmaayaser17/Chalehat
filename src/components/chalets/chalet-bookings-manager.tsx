@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Check, TriangleAlert, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,7 @@ import {
   rejectBookingAction,
 } from "@/lib/actions/chalet-booking-actions";
 import { addCustomerReviewAction, getCustomerBookingStatsAction } from "@/lib/actions/customer-review-actions";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, summarizeBookingPeriods } from "@/lib/utils";
 import type { Booking, CustomerBalance, CustomerBookingStats } from "@/lib/api/types";
 
 type PendingAction =
@@ -55,6 +56,7 @@ function BookingSummary({ booking }: { booking: Booking }) {
           "—"
         )}
       </span>
+      <Badge variant="outline">{summarizeBookingPeriods(booking.days)}</Badge>
       {typeof booking.totalPrice === "number" && <span className="font-medium">{formatCurrency(booking.totalPrice)}</span>}
     </div>
   );
@@ -248,6 +250,7 @@ export function ChaletBookingsManager({
           <TableRow>
             <TableHead>Customer</TableHead>
             <TableHead>Dates</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Children</TableHead>
             <TableHead>Price</TableHead>
             <TableHead>Status</TableHead>
@@ -257,9 +260,10 @@ export function ChaletBookingsManager({
         <TableBody>
           {bookings.length > 0 ? (
             bookings.map((booking) => {
-              // The booking list endpoint's own `days` always comes back empty —
-              // fall back to the calendar-derived lookup for the currently
-              // displayed month (see `bookingDatesById`'s doc comment).
+              // `days` is populated on this endpoint (confirmed live) — the
+              // calendar-derived lookup is kept only as a defensive fallback
+              // for the rare booking where it isn't (see `bookingDatesById`'s
+              // doc comment).
               const ownDates = (booking.days ?? []).map((d) => d.date);
               const fallbackDates = bookingDatesById[String(booking.id)] ?? [];
               const dates = ownDates.length > 0 ? ownDates : fallbackDates;
@@ -284,6 +288,9 @@ export function ChaletBookingsManager({
                       ) : (
                         "—"
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{summarizeBookingPeriods(booking.days)}</Badge>
                     </TableCell>
                     <TableCell>{booking.childrenCount ?? "—"}</TableCell>
                     <TableCell>
@@ -339,7 +346,7 @@ export function ChaletBookingsManager({
 
                   {balanceFor === booking.id && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="space-y-3 rounded-md bg-muted p-3 text-sm">
                           {balanceLoading ? (
                             <span className="text-muted-foreground">Loading…</span>
@@ -393,7 +400,7 @@ export function ChaletBookingsManager({
 
                   {actionHere?.type === "pay" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="flex flex-wrap items-end gap-3 rounded-md bg-muted p-3">
                           <div className="w-32 space-y-1.5">
                             <Label htmlFor={`pay-amount-${booking.id}`}>Amount</Label>
@@ -433,7 +440,7 @@ export function ChaletBookingsManager({
 
                   {actionHere?.type === "review" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="space-y-3 rounded-md bg-muted p-3">
                           <div className="flex flex-wrap items-end gap-3">
                             <div className="w-32 space-y-1.5">
@@ -507,7 +514,7 @@ export function ChaletBookingsManager({
 
                   {actionHere?.type === "approve" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="space-y-3 rounded-md bg-muted p-3">
                           {actionHere.conflicts.length > 0 && (
                             <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
@@ -577,7 +584,7 @@ export function ChaletBookingsManager({
 
                   {actionHere?.type === "reject" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="flex flex-wrap items-end gap-3 rounded-md bg-muted p-3">
                           <div className="w-72 space-y-1.5">
                             <Label htmlFor={`reason-${booking.id}`}>Reason</Label>
@@ -616,7 +623,7 @@ export function ChaletBookingsManager({
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                 No bookings yet.
               </TableCell>
             </TableRow>

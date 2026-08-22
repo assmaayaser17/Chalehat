@@ -61,19 +61,20 @@ function navSectionsForRole(role: UserRole): NavSection[] {
     });
   }
 
-  // Admin-authored reviews of customer behavior — a ChaletAdmin gets a
-  // scoped view (their own customers only), a SuperAdmin/SystemAdmin sees
-  // everything, both confirmed live against the API.
-  if (isStaffAdmin || isChaletAdmin) {
-    const items: NavItem[] = [{ href: "/dashboard/customer-reviews", label: "Customer Reviews", icon: Star }];
-    // Per-customer rating rollup — needs `getAllUsers`, which is
-    // SuperAdmin/SystemAdmin only, so a ChaletAdmin never sees this (they
-    // already get the same numbers scoped to their own customers, inline on
-    // their chalet's bookings page).
-    if (isStaffAdmin) {
-      items.push({ href: "/dashboard/customer-stats", label: "Customer Stats", icon: BarChart3 });
-    }
-    sections.push({ label: "Reviews", items });
+  // Admin-authored reviews of customer behavior — SuperAdmin/SystemAdmin
+  // only. Confirmed live: a ChaletAdmin token gets a 403 on
+  // /api/admin/customer-reviews/all, matching the endpoint's own Postman
+  // description ("SuperAdmin, SystemAdmin"). A ChaletAdmin still rates their
+  // own customers inline on the chalet's bookings page — they just can't
+  // browse this cross-chalet list.
+  if (isStaffAdmin) {
+    sections.push({
+      label: "Reviews",
+      items: [
+        { href: "/dashboard/customer-reviews", label: "Customer Reviews", icon: Star },
+        { href: "/dashboard/customer-stats", label: "Customer Stats", icon: BarChart3 },
+      ],
+    });
   }
 
   // Approving a chalet image is SuperAdmin/SystemAdmin only per the API's

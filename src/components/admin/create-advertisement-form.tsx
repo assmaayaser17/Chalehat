@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImageUp, X } from "lucide-react";
+import { X } from "lucide-react";
 import { advertisementSchema, type AdvertisementFormValues } from "@/lib/validations/advertisement";
 import { createAdvertisementAction } from "@/lib/actions/advertisement-actions";
 import { FormField } from "@/components/shared/form-field";
@@ -26,7 +26,18 @@ import type { AdvertisementCategory } from "@/lib/api/types";
 export function CreateAdvertisementForm({ categories }: { categories: AdvertisementCategory[] }) {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [images, setImages] = React.useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Regenerated whenever the file list changes, and revoked on the way out
+  // so picking/removing a few photos before submitting doesn't leak object URLs.
+  React.useEffect(() => {
+    const urls = images.map((file) => URL.createObjectURL(file));
+    setImagePreviews(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [images]);
 
   const {
     register,
@@ -124,25 +135,25 @@ export function CreateAdvertisementForm({ categories }: { categories: Advertisem
             className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 file:transition-colors hover:file:bg-primary-100"
           />
           {images.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               {images.map((file, index) => (
-                <li
+                <div
                   key={`${file.name}-${index}`}
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-muted/30 py-1 ps-2.5 pe-1.5 text-xs"
+                  className="group relative aspect-square overflow-hidden rounded-md border border-border bg-muted/20"
                 >
-                  <ImageUp className="h-3.5 w-3.5 shrink-0 text-primary-600" />
-                  <span className="max-w-[10rem] truncate">{file.name}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local blob: preview, next/image can't handle it */}
+                  <img src={imagePreviews[index]} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     aria-label={`Remove ${file.name}`}
                     onClick={() => removeImage(index)}
-                    className="rounded-full p-0.5 hover:bg-muted"
+                    className="absolute end-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-opacity group-hover:opacity-100 sm:opacity-0"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </FormField>

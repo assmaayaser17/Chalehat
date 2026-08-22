@@ -44,7 +44,7 @@ export function CreateStaffForm() {
       return;
     }
     setSuccess(true);
-    reset({ fullName: "", userName: "", email: "", password: "", role: values.role });
+    reset({ fullName: "", userName: "", email: "", password: "", phoneNumber: "", role: values.role });
     queryClient.invalidateQueries({ queryKey: ["admin-users"] });
   }
 
@@ -70,25 +70,28 @@ export function CreateStaffForm() {
         <FormField id="password" label="Password" error={errors.password?.message}>
           <Input id="password" type="password" {...register("password")} />
         </FormField>
-
-        <FormField id="role" label="Role" error={errors.role?.message}>
-          <Controller
-            control={control}
-            name="role"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SystemAdmin">{ROLE_LABELS_AR.SystemAdmin}</SelectItem>
-                  <SelectItem value="ChaletAdmin">{ROLE_LABELS_AR.ChaletAdmin}</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
+        <FormField id="phoneNumber" label="Phone number" error={errors.phoneNumber?.message}>
+          <Input id="phoneNumber" inputMode="tel" placeholder="+970599123456" {...register("phoneNumber")} />
         </FormField>
       </div>
+
+      <FormField id="role" label="Role" error={errors.role?.message}>
+        <Controller
+          control={control}
+          name="role"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SystemAdmin">{ROLE_LABELS_AR.SystemAdmin}</SelectItem>
+                <SelectItem value="ChaletAdmin">{ROLE_LABELS_AR.ChaletAdmin}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </FormField>
 
       <Button type="submit" loading={isSubmitting}>
         Add staff member

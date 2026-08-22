@@ -14,6 +14,7 @@ export async function createStaffAction(values: CreateStaffFormValues): Promise<
       Email: values.email,
       password: values.password,
       role: values.role,
+      phoneNumber: values.phoneNumber,
     });
   } catch (err) {
     if (err instanceof ApiError) return { success: false, message: err.message };

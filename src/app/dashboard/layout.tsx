@@ -4,6 +4,7 @@ import { ROLE_LABELS_AR } from "@/lib/api/types";
 import { Logo } from "@/components/layout/logo";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import { DashboardMobileNav } from "@/components/layout/dashboard-mobile-nav";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Badge } from "@/components/ui/badge";
 
@@ -50,7 +51,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               {session.fullName}
             </strong>
           </span>
-          <UserMenu fullName={session.fullName} role={session.role} dashboardHref="/dashboard" />
+          <div className="flex items-center gap-2">
+            <NotificationBell role={session.role} />
+            <UserMenu fullName={session.fullName} role={session.role} dashboardHref="/dashboard" />
+          </div>
         </header>
 
         <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>

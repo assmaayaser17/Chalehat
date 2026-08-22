@@ -10,6 +10,16 @@ export async function getChaletBookings(chaletId: number): Promise<Booking[]> {
 }
 
 /**
+ * GET /api/Booking/{id} — ChaletAdmin (own chalet) / SuperAdmin / SystemAdmin.
+ * Used to resolve a booking notification's `relatedBookingId` down to the
+ * `chaletId` needed to deep-link into that chalet's bookings page.
+ */
+export async function getBookingById(bookingId: number): Promise<Booking> {
+  const data = await authFetch<unknown>(`/api/Booking/${bookingId}`, { cache: "no-store" });
+  return unwrapObject<Booking>(data);
+}
+
+/**
  * GET /api/Booking/{id}/conflicts — ChaletAdmin (own chalet) / SuperAdmin.
  * Other bookings for the same chalet with overlapping dates (excludes the
  * booking being queried). The backend does NOT auto-resolve these when one

@@ -17,7 +17,7 @@ export function ChaletCard({ chalet, href }: { chalet: Chalet; href?: string }) 
   return (
     <Card className="group overflow-hidden transition-shadow hover:shadow-md">
       <Link href={link} className="block">
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-primary-50">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-primary-50">
           {image ? (
             <Image
               src={image}

@@ -21,10 +21,9 @@ export async function getCustomerBookingStats(userId: string): Promise<CustomerB
 
 /**
  * GET /api/admin/customer-reviews/all?minDisturbanceRating&page&pageSize —
- * documented as SuperAdmin/SystemAdmin only, but a live call with a
- * ChaletAdmin token also returned 200 (with results scoped to nothing, in
- * that test) rather than 403 — left open to any dashboard role here and
- * degraded gracefully if the backend does reject it for a given account.
+ * SuperAdmin/SystemAdmin only. Confirmed live: a ChaletAdmin token gets a
+ * 403 here, matching the endpoint's own Postman description. Don't wire
+ * this into anything a ChaletAdmin can reach — see `dashboard-nav.tsx`.
  */
 export async function getAllCustomerReviews(
   page: number,

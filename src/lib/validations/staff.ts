@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneNumberSchema } from "@/lib/validations/auth";
 
 export const createStaffSchema = z.object({
   fullName: z.string().min(3, "Full name is required"),
@@ -15,6 +16,7 @@ export const createStaffSchema = z.object({
   role: z.enum(["SystemAdmin", "ChaletAdmin"], {
     errorMap: () => ({ message: "Choose a role" }),
   }),
+  phoneNumber: phoneNumberSchema,
 });
 
 export type CreateStaffFormValues = z.infer<typeof createStaffSchema>;

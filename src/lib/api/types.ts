@@ -95,6 +95,7 @@ export interface CreateStaffRequest {
   Email: string;
   password: string;
   role: Extract<UserRole, "SystemAdmin" | "ChaletAdmin">;
+  phoneNumber: string;
 }
 
 export interface ApiUser {
@@ -399,11 +400,22 @@ export interface Booking {
   notes?: string;
   totalPrice?: number;
   createdAt?: string;
-  days?: { date: string; period: number }[];
+  /** `period` confirmed live as a string ("Morning"/"Evening"/"FullDay") — see `formatBookingPeriod` in `lib/utils.ts`. */
+  days?: { date: string; period: string }[];
   isPaid?: boolean;
   paidAmount?: number;
   paymentMethod?: string;
   rejectionReason?: string;
+}
+
+/** Payload pushed over the `ReceiveNotification` SignalR event — see `hooks/use-booking-notifications.ts`. */
+export interface BookingNotification {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  relatedBookingId: number | null;
+  createdAt: string;
 }
 
 export interface ApproveBookingRequest {
