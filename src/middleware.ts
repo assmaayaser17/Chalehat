@@ -187,6 +187,14 @@ export async function middleware(request: NextRequest) {
     return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
+  // Customer categories — no role restriction is documented for this
+  // feature at all (unlike every other admin endpoint), but every example
+  // request in the Postman collection uses a SuperAdmin token, so treated
+  // as SuperAdmin-only here until confirmed otherwise.
+  if (pathname.startsWith("/dashboard/customer-categories") && !isSuperAdmin) {
+    return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
+  }
+
   // Platform-wide statistics — SuperAdmin/SystemAdmin only per the API docs,
   // unlike per-chalet statistics which a ChaletAdmin also gets (that route
   // lives under /dashboard/chalets/[id]/statistics, already gated above).

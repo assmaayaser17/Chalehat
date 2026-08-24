@@ -10,11 +10,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { UsersTable } from "@/components/admin/users-table";
 import { ApiError } from "@/lib/api/client";
 import { getAllUsers } from "@/lib/api/admin";
+import { getAllCustomerCategories } from "@/lib/api/customer-category";
 import { getSession } from "@/lib/auth/session";
-import { ROLE_LABELS_AR, type UserRole } from "@/lib/api/types";
+import { ROLE_LABELS_AR, type CustomerCategory, type UserRole } from "@/lib/api/types";
 
 interface PageProps {
-  searchParams: Promise<{ role?: string; isBlocked?: string; search?: string }>;
+  searchParams: Promise<{ role?: string; isBlocked?: string; search?: string; customerCategoryId?: string }>;
 }
 
 export const metadata: Metadata = { title: "Users" };
@@ -26,16 +27,23 @@ function isUserRole(value: string): value is UserRole {
 }
 
 export default async function UsersPage({ searchParams }: PageProps) {
-  const { role: roleParam, isBlocked: isBlockedParam, search } = await searchParams;
+  const { role: roleParam, isBlocked: isBlockedParam, search, customerCategoryId: categoryParam } = await searchParams;
   const role = roleParam && isUserRole(roleParam) ? roleParam : undefined;
   const isBlocked = isBlockedParam === "true" ? true : isBlockedParam === "false" ? false : undefined;
+  const customerCategoryId = categoryParam ? Number(categoryParam) : undefined;
 
   const session = await getSession();
+  // Customer categories are SuperAdmin-only (see the doc comment on
+  // `CustomerCategory`) — skip fetching/rendering that filter and the
+  // per-row "Assign categories" action for any other role on this page.
+  const canManageCategories = session?.role === "SuperAdmin";
 
   let users: Awaited<ReturnType<typeof getAllUsers>> = [];
+  let categories: CustomerCategory[] = [];
   let errorMessage: string | null = null;
   try {
-    users = await getAllUsers({ role, isBlocked, search });
+    users = await getAllUsers({ role, isBlocked, search, customerCategoryId });
+    if (canManageCategories) categories = await getAllCustomerCategories();
   } catch (err) {
     errorMessage = err instanceof ApiError ? err.message : "Couldn't load users.";
   }
@@ -83,6 +91,25 @@ export default async function UsersPage({ searchParams }: PageProps) {
               <Input id="search" name="search" defaultValue={search ?? ""} placeholder="Name, username, or email" />
             </div>
 
+            {canManageCategories && categories.length > 0 && (
+              <div className="w-48 space-y-1.5">
+                <Label htmlFor="customerCategoryId">Customer category</Label>
+                <select
+                  id="customerCategoryId"
+                  name="customerCategoryId"
+                  defaultValue={categoryParam ?? ""}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Any category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id} dir="auto">
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <Button type="submit">Apply</Button>
           </form>
         </CardContent>
@@ -93,7 +120,12 @@ export default async function UsersPage({ searchParams }: PageProps) {
       ) : users.length === 0 ? (
         <EmptyState icon={Users} title="No users match these filters" />
       ) : session ? (
-        <UsersTable initialUsers={users} currentUserId={session.userId} currentUserRole={session.role} />
+        <UsersTable
+          initialUsers={users}
+          currentUserId={session.userId}
+          currentUserRole={session.role}
+          categories={categories}
+        />
       ) : null}
     </div>
   );

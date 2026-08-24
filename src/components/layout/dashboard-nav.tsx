@@ -123,6 +123,16 @@ function navSectionsForRole(role: UserRole): NavSection[] {
     });
   }
 
+  // No role restriction is documented for this feature at all, but every
+  // example request in the Postman collection uses a SuperAdmin token — see
+  // the doc comment on `CustomerCategory` in lib/api/types.ts.
+  if (isSuperAdmin) {
+    sections.push({
+      label: "Customers",
+      items: [{ href: "/dashboard/customer-categories", label: "Customer Categories", icon: Tag }],
+    });
+  }
+
   if (isChaletAdmin || isSuperAdmin) {
     const items: NavItem[] = [
       { href: "/dashboard/chalets", label: isSuperAdmin ? "All Chalets" : "My Chalets", icon: Home },

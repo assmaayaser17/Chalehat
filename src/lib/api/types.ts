@@ -108,13 +108,43 @@ export interface ApiUser {
   createdAt?: string;
   isBlocked?: boolean;
   blockReason?: string | null;
+  /** Only ever populated for a Customer, and only if the backend actually includes it on this list response — see `normalizeApiUser` in lib/api/admin.ts. */
+  customerCategories?: CustomerCategory[];
 }
 
-/** GET /api/admin/users?role&isBlocked&search — SuperAdmin/SystemAdmin only. All filters optional. */
+/** GET /api/admin/users?role&isBlocked&search&customerCategoryId — SuperAdmin/SystemAdmin only. All filters optional. */
 export interface GetAllUsersFilters {
   role?: UserRole;
   isBlocked?: boolean;
   search?: string;
+  customerCategoryId?: number;
+}
+
+// ---------- Customer Category: /api/customer-categories ----------
+
+/**
+ * No role restriction is documented for this feature (no `description` field
+ * on any of its Postman requests, unlike every other admin endpoint) — every
+ * example request nonetheless uses a SuperAdmin token, so treated as
+ * SuperAdmin-only here. Re-check with the backend if a SystemAdmin needs it.
+ */
+export interface CustomerCategory {
+  id: number;
+  name: string;
+}
+
+export interface CreateCustomerCategoryRequest {
+  name: string;
+}
+
+/**
+ * PUT /api/customer-categories/customer/{customerId} body. Assumed to
+ * *replace* the customer's full set of category links (PUT semantics) rather
+ * than add to it — unlike `POST /api/Chalet/{id}/amenities`, which only
+ * adds. Not confirmed live; the Postman collection has no response example.
+ */
+export interface AssignCustomerCategoriesRequest {
+  categoryIds: number[];
 }
 
 /** PATCH /api/admin/users/{id}/toggle-block — SuperAdmin/SystemAdmin only; a SystemAdmin may only block Customers, per the API docs. */
