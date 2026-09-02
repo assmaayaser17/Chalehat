@@ -29,9 +29,22 @@ export function useBookingNotifications(enabled: boolean) {
   React.useEffect(() => {
     if (!enabled) return;
 
+    // React's Strict Mode double-invokes effects in dev: mount, clean up,
+    // mount again. The cleanup's `connection.stop()` races the throwaway
+    // first connection's in-flight `.start()` negotiation, which rejects
+    // with "the connection was stopped during negotiation" — expected dev
+    // noise, not a real failure, so `cancelled` lets us swallow just that.
+    let cancelled = false;
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(HUB_URL, { accessTokenFactory: fetchAccessToken })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+      // The hub server (hosted on Render) occasionally goes quiet longer than
+      // the client's keep-alive timeout, which SignalR's default logger
+      // reports as an "Error"-level console message even though
+      // `withAutomaticReconnect` above already recovers from it — that's
+      // expected noise on a free/hobby-tier host, not an app-level failure.
+      .configureLogging(signalR.LogLevel.Critical)
       .build();
 
     connection.on("ReceiveNotification", (notification: BookingNotification) => {
@@ -44,13 +57,17 @@ export function useBookingNotifications(enabled: boolean) {
 
     connection
       .start()
-      .then(() => setIsConnected(true))
+      .then(() => {
+        if (!cancelled) setIsConnected(true);
+      })
       .catch((err) => {
+        if (cancelled) return;
         console.error("Couldn't connect to the notification hub:", err);
         setIsConnected(false);
       });
 
     return () => {
+      cancelled = true;
       connection.stop();
     };
   }, [enabled]);

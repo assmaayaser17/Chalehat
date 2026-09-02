@@ -42,8 +42,8 @@ export async function loginAction(values: LoginFormValues, next?: string): Promi
   let target: string;
   try {
     const tokens = await loginUser({ Identifier: values.identifier, password: values.password });
-    const session = buildSession(tokens);
-    await setSession(session);
+    const session = buildSession(tokens, values.rememberMe);
+    await setSession(session, values.rememberMe);
     // Only honor a same-site relative path (never a full URL) to avoid an
     // open redirect via a crafted `next` query param.
     target = next && next.startsWith("/") && !next.startsWith("//") ? next : homeForRole(session.role);

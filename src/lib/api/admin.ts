@@ -75,8 +75,12 @@ export async function createStaff(data: CreateStaffRequest): Promise<ApiUser> {
   
 }
 
-/** GET /api/Admin/by-role/{role} — SuperAdmin/SystemAdmin only. The API doesn't
- *  echo `role` back on each user (it's implied by the URL), so we stamp it on. */
+/**
+ * GET /api/Admin/by-role/{role} — SuperAdmin, SystemAdmin, or ChaletAdmin per
+ * the Postman collection (not SuperAdmin/SystemAdmin only, despite what this
+ * comment used to say). The API doesn't echo `role` back on each user (it's
+ * implied by the URL), so we stamp it on.
+ */
 export async function getUsersByRole(role: UserRole): Promise<ApiUser[]> {
   const data = await authFetch<unknown>(`/api/Admin/by-role/${role}`, {
     cache: "no-store",

@@ -60,7 +60,7 @@ async function MyChaletsGrid({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       {chalets.map((chalet) => (
         <div key={chalet.id} className="space-y-3">
           <ChaletCard chalet={chalet} />
-          <ChaletManageMenu chaletId={chalet.id} />
+          <ChaletManageMenu chaletId={chalet.id} isSuperAdmin={isSuperAdmin} />
         </div>
       ))}
     </div>

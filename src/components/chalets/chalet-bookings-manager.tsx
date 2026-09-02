@@ -31,20 +31,33 @@ type PendingAction =
 
 const DEFAULT_CONFLICT_REASON = "Another booking for the same dates was approved.";
 
-/** The real field is `userFullName` (often an empty string, not omitted) — `customerName` is a defensive fallback only. */
-function customerLabel(booking: Booking): string {
-  return booking.userFullName || booking.customerName || `#${booking.id}`;
+/**
+ * The real field is `userFullName` (often an empty string, not omitted) —
+ * `customerName` is a defensive fallback only. `customerNamesById` (built
+ * from `GET /api/Admin/by-role/Customer`, keyed by `userId`) is checked
+ * first since it's the one source that reliably has a real name — see the
+ * page's doc comment on why the booking endpoint itself can't be trusted for this.
+ */
+function customerLabel(booking: Booking, customerNamesById: Record<string, string>): string {
+  const backfilled = booking.userId ? customerNamesById[booking.userId] : undefined;
+  return backfilled || booking.userFullName || booking.customerName || `#${booking.id}`;
 }
 
 /** Renders one booking's summary line — reused for the row itself and for the conflicting bookings listed under it. */
-function BookingSummary({ booking }: { booking: Booking }) {
+function BookingSummary({
+  booking,
+  customerNamesById,
+}: {
+  booking: Booking;
+  customerNamesById: Record<string, string>;
+}) {
   const days = booking.days ?? [];
   const firstDay = days[0];
   const lastDay = days[days.length - 1];
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
       <span dir="auto" className="font-medium text-foreground">
-        {customerLabel(booking)}
+        {customerLabel(booking, customerNamesById)}
       </span>
       <span className="text-muted-foreground">
         {firstDay ? (
@@ -67,11 +80,14 @@ export function ChaletBookingsManager({
   chaletId,
   bookings,
   bookingDatesById = {},
+  customerNamesById = {},
 }: {
   chaletId: number;
   bookings: Booking[];
   /** bookingId (as a string key) -> sorted dates, built from the chalet calendar for whatever month is currently displayed — see `buildBookingDatesById`. */
   bookingDatesById?: Record<string, string[]>;
+  /** userId -> fullName, backfilled from `GET /api/Admin/by-role/Customer` since the booking endpoint's own name field is unreliable — see `customerLabel`. */
+  customerNamesById?: Record<string, string>;
 }) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = React.useState<PendingAction | null>(null);
@@ -277,7 +293,7 @@ export function ChaletBookingsManager({
                 <React.Fragment key={booking.id}>
                   <TableRow>
                     <TableCell dir="auto" className="font-medium">
-                      {customerLabel(booking)}
+                      {customerLabel(booking, customerNamesById)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {firstDate ? (
@@ -525,7 +541,7 @@ export function ChaletBookingsManager({
                               </p>
                               <div className="space-y-1.5">
                                 {actionHere.conflicts.map((c) => (
-                                  <BookingSummary key={c.id} booking={c} />
+                                  <BookingSummary key={c.id} booking={c} customerNamesById={customerNamesById} />
                                 ))}
                               </div>
                               <p className="text-xs text-muted-foreground">

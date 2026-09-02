@@ -20,8 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/** Client Component: consolidates the per-chalet management links behind one menu instead of a busy button row. */
-export function ChaletManageMenu({ chaletId }: { chaletId: number }) {
+/**
+ * Client Component: consolidates the per-chalet management links behind one
+ * menu instead of a busy button row. SuperAdmin only gets "Images" here —
+ * amenities/pricing/bookings/statistics/reviews for a specific chalet are
+ * the owning ChaletAdmin's job, not SuperAdmin's, per explicit request.
+ */
+export function ChaletManageMenu({ chaletId, isSuperAdmin = false }: { chaletId: number; isSuperAdmin?: boolean }) {
   const base = `/dashboard/chalets/${chaletId}`;
 
   return (
@@ -37,36 +42,40 @@ export function ChaletManageMenu({ chaletId }: { chaletId: number }) {
             <ImageUp /> Images
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`${base}/amenities`}>
-            <Sparkles /> Amenities
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`${base}/seasonal-prices`}>
-            <CalendarRange /> Seasonal prices
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`${base}/weekday-prices`}>
-            <CalendarClock /> Weekday prices
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`${base}/bookings`}>
-            <CalendarCheck /> Bookings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`${base}/statistics`}>
-            <BarChart3 /> Statistics
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`${base}/reviews`}>
-            <Star /> Reviews
-          </Link>
-        </DropdownMenuItem>
+        {!isSuperAdmin && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href={`${base}/amenities`}>
+                <Sparkles /> Amenities
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${base}/seasonal-prices`}>
+                <CalendarRange /> Seasonal prices
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${base}/weekday-prices`}>
+                <CalendarClock /> Weekday prices
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${base}/bookings`}>
+                <CalendarCheck /> Bookings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${base}/statistics`}>
+                <BarChart3 /> Statistics
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${base}/reviews`}>
+                <Star /> Reviews
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

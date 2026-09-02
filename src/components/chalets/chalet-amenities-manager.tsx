@@ -2,19 +2,15 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus } from "lucide-react";
+import { Check, Loader2, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { linkChaletAmenitiesAction } from "@/lib/actions/chalet-amenity-actions";
+import { linkChaletAmenitiesAction, unlinkChaletAmenityAction } from "@/lib/actions/chalet-amenity-actions";
 import type { Amenity } from "@/lib/api/types";
 
-/**
- * Client Component: the API can only add amenities to a chalet (there's no
- * unlink endpoint), so linked amenities are shown as a fixed badge list and
- * the rest are selectable chips to add.
- */
+/** Client Component: add amenities from the unlinked list, or remove a linked one — both server actions + `router.refresh()` to resync. */
 export function ChaletAmenitiesManager({
   chaletId,
   allAmenities,
@@ -30,6 +26,7 @@ export function ChaletAmenitiesManager({
 
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
   const [isSaving, setIsSaving] = React.useState(false);
+  const [removingId, setRemovingId] = React.useState<number | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   function toggle(id: number) {
@@ -59,6 +56,23 @@ export function ChaletAmenitiesManager({
     }
   }
 
+  async function handleRemove(amenityId: number) {
+    setError(null);
+    setRemovingId(amenityId);
+    try {
+      const result = await unlinkChaletAmenityAction(chaletId, amenityId);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {error && <Alert variant="destructive">{error}</Alert>}
@@ -70,8 +84,17 @@ export function ChaletAmenitiesManager({
         ) : (
           <div className="flex flex-wrap gap-2">
             {linkedAmenities.map((amenity) => (
-              <Badge key={amenity.id} variant="success" dir="auto" className="gap-1">
+              <Badge key={amenity.id} variant="success" dir="auto" className="gap-1 pe-1">
                 <Check className="h-3 w-3" /> {amenity.name}
+                <button
+                  type="button"
+                  aria-label={`Remove ${amenity.name}`}
+                  disabled={removingId !== null}
+                  onClick={() => handleRemove(amenity.id)}
+                  className="ms-0.5 flex h-4 w-4 items-center justify-center rounded-full hover:bg-black/10"
+                >
+                  {removingId === amenity.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                </button>
               </Badge>
             ))}
           </div>

@@ -85,6 +85,8 @@ export interface Session {
   fullName: string;
   email: string;
   role: UserRole;
+  /** From the login form's "Remember me" — carried through every refresh so the middleware knows whether to keep issuing a long-lived cookie or a plain session cookie. */
+  rememberMe?: boolean;
 }
 
 // ---------- Admin: /api/Admin ----------
@@ -220,6 +222,8 @@ export interface ChaletImage {
   displayOrder: number;
   isApproved: boolean;
   isCoverImage: boolean;
+  /** Set when a SuperAdmin/SystemAdmin rejects the photo instead of approving it — `isApproved` stays `false`, this is what distinguishes "rejected" from "still pending". Shown back to the chalet owner. */
+  rejectionReason?: string | null;
 }
 
 // ---------- Amenity: /api/Amenity ----------
@@ -280,23 +284,44 @@ export interface Advertisement {
   id: number;
   name: string;
   description: string;
+  /** No longer collected or shown anywhere in the UI (these ads don't have a meaningful single price) — kept only because the backend still returns/requires it, so edits round-trip whatever value is already there unseen. */
   price: number;
   categoryId: number;
   categoryName?: string;
   location: string;
+  /** Only confirmed on create's form-data (alongside `location`) — the update example in the Postman collection doesn't show it, so its presence/casing on read isn't confirmed either. */
+  address?: string;
   phoneNumber: string;
   images?: unknown;
   createdAt?: string;
 }
 
-/** PUT /api/advertisements/{id} — no `images` field; the docs only show create as accepting photos. */
+/** One image on an advertisement, once `resolveAdvertisement` has normalized the raw (unconfirmed-shape) `images` field — its `id` is what `reorder`/`delete` take. */
+export interface AdvertisementImage {
+  id: number;
+  url: string;
+}
+
+/**
+ * PUT /api/advertisements/{id} — no `images` field; use the dedicated image
+ * endpoints for those (add/delete/reorder). `address` isn't in the Postman
+ * collection's update example, so it's sent optimistically — if the backend
+ * ignores unrecognized JSON fields (typical for ASP.NET model binding),
+ * that's harmless; re-check if edits stop persisting the address.
+ */
 export interface UpdateAdvertisementRequest {
   name: string;
   description: string;
   price: number;
   categoryId: number;
   location: string;
+  address?: string;
   phoneNumber: string;
+}
+
+/** PUT /api/advertisements/{id}/images/reorder */
+export interface ReorderAdvertisementImagesRequest {
+  orderedImageIds: number[];
 }
 
 // ---------- Chalet Seasonal Prices: /api/chalet/{id}/seasonal-prices ----------

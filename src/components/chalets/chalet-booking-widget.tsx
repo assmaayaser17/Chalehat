@@ -35,10 +35,13 @@ export function ChaletBookingWidget({
   chalet,
   isLoggedIn,
   role,
+  hasPendingBooking = false,
 }: {
   chalet: Chalet;
   isLoggedIn: boolean;
   role: UserRole | null;
+  /** True when this customer already has a Pending booking for this exact chalet — the API rejects a second one, so the form is blocked upfront instead of letting them fill it in first. */
+  hasPendingBooking?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -77,6 +80,15 @@ export function ChaletBookingWidget({
     }
     if (checkOut < checkIn) {
       setError("Check-out must be on or after check-in.");
+      return;
+    }
+    const dayCount = buildBookingDays(checkIn, checkOut).length;
+    if (dayCount < chalet.minNights) {
+      setError(`This chalet requires at least ${chalet.minNights} night${chalet.minNights === 1 ? "" : "s"} per booking.`);
+      return;
+    }
+    if (dayCount > chalet.maxNights) {
+      setError(`This chalet allows at most ${chalet.maxNights} night${chalet.maxNights === 1 ? "" : "s"} per booking.`);
       return;
     }
     setIsPreviewing(true);
@@ -123,6 +135,20 @@ export function ChaletBookingWidget({
       <p className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
         Only customer accounts can book a chalet.
       </p>
+    );
+  }
+
+  if (hasPendingBooking) {
+    return (
+      <div className="space-y-2 rounded-md border border-dashed border-border p-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          You already have a pending booking request for this chalet. Wait for it to be reviewed before submitting
+          another one.
+        </p>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/my-bookings">View my bookings</Link>
+        </Button>
+      </div>
     );
   }
 

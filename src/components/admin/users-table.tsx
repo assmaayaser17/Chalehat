@@ -220,6 +220,7 @@ export function UsersTable({
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Categories</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-40">Actions</TableHead>
           </TableRow>
@@ -249,14 +250,20 @@ export function UsersTable({
                       {user.phoneNumber ?? <span className="text-muted-foreground/50">—</span>}
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <Badge variant="accent">{ROLE_LABELS_AR[user.role] ?? user.role ?? "—"}</Badge>
-                        {user.customerCategories?.map((category) => (
-                          <Badge key={category.id} variant="outline" dir="auto" className="gap-1">
-                            <Tag className="h-3 w-3" /> {category.name}
-                          </Badge>
-                        ))}
-                      </div>
+                      <Badge variant="accent">{ROLE_LABELS_AR[user.role] ?? user.role ?? "—"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.customerCategories && user.customerCategories.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {user.customerCategories.map((category) => (
+                            <Badge key={category.id} variant="outline" dir="auto" className="gap-1">
+                              <Tag className="h-3 w-3" /> {category.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {user.isBlocked ? (
@@ -314,7 +321,7 @@ export function UsersTable({
 
                   {actionHere?.type === "block" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="flex flex-wrap items-end gap-3 rounded-md bg-muted p-3">
                           <div className="w-72 space-y-1.5">
                             <Label htmlFor={`block-reason-${user.id}`}>
@@ -354,7 +361,7 @@ export function UsersTable({
 
                   {actionHere?.type === "role" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="flex flex-wrap items-end gap-3 rounded-md bg-muted p-3">
                           <div className="w-52 space-y-1.5">
                             <Label htmlFor={`role-${user.id}`}>New role for {user.fullName}</Label>
@@ -396,7 +403,7 @@ export function UsersTable({
 
                   {actionHere?.type === "categories" && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <div className="space-y-3 rounded-md bg-muted p-3">
                           <div>
                             <Label>Categories for {user.fullName}</Label>
@@ -440,7 +447,7 @@ export function UsersTable({
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                 No users match these filters.
               </TableCell>
             </TableRow>

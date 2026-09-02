@@ -4,8 +4,9 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import {
   approveChaletImage,
   deleteChaletImage,
+  rejectChaletImage,
   setCoverChaletImage,
-  uploadChaletImage,
+  uploadChaletImages,
 } from "@/lib/api/chalet-images";
 import { ApiError } from "@/lib/api/client";
 import type { ActionResult } from "@/lib/auth/actions";
@@ -18,12 +19,12 @@ function revalidateChalet(chaletId: number) {
 }
 
 export async function uploadChaletImageAction(chaletId: number, formData: FormData): Promise<ActionResult> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { success: false, message: "Choose an image file first." };
+  const files = formData.getAll("files").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  if (files.length === 0) {
+    return { success: false, message: "Choose at least one image file." };
   }
   try {
-    await uploadChaletImage(chaletId, file);
+    await uploadChaletImages(chaletId, files);
   } catch (err) {
     if (err instanceof ApiError) return { success: false, message: err.message };
     return { success: false, message: "An unexpected error occurred while uploading the image." };
@@ -38,6 +39,20 @@ export async function approveChaletImageAction(chaletId: number, imageId: number
   } catch (err) {
     if (err instanceof ApiError) return { success: false, message: err.message };
     return { success: false, message: "An unexpected error occurred while approving the image." };
+  }
+  revalidateChalet(chaletId);
+  return { success: true };
+}
+
+export async function rejectChaletImageAction(chaletId: number, imageId: number, reason: string): Promise<ActionResult> {
+  if (!reason.trim()) {
+    return { success: false, message: "A reason is required to reject a photo." };
+  }
+  try {
+    await rejectChaletImage(chaletId, imageId, reason.trim());
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    return { success: false, message: "An unexpected error occurred while rejecting the image." };
   }
   revalidateChalet(chaletId);
   return { success: true };

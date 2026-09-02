@@ -24,12 +24,13 @@ export async function createChaletWeekdayPrice(
 }
 
 /**
- * DELETE /api/chalet/{id}/weekday-prices/{priceId} — ChaletAdmin (own
- * chalet) / SuperAdmin. Mirrors the seasonal-prices delete endpoint; not in
- * the Postman collection, same as the rest of this resource.
+ * DELETE /api/chalet-weekday-prices/{id} — ChaletAdmin (own chalet) /
+ * SuperAdmin. Confirmed in the Postman collection — note this is a flat
+ * resource path keyed only by the price rule's own id, NOT nested under
+ * `/api/chalet/{chaletId}/...` like the other endpoints on this resource.
  */
-export async function deleteChaletWeekdayPrice(chaletId: number, priceId: number): Promise<void> {
-  await authFetch<unknown>(`/api/chalet/${chaletId}/weekday-prices/${priceId}`, {
+export async function deleteChaletWeekdayPrice(priceId: number): Promise<void> {
+  await authFetch<unknown>(`/api/chalet-weekday-prices/${priceId}`, {
     method: "DELETE",
     cache: "no-store",
   });

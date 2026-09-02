@@ -30,7 +30,7 @@ export default async function PendingImagesPage() {
     if (result.status !== "fulfilled") continue;
     const { chalet, images } = result.value;
     for (const image of images) {
-      if (!image.isApproved) pending.push({ ...image, chaletName: chalet.name });
+      if (!image.isApproved && !image.rejectionReason) pending.push({ ...image, chaletName: chalet.name });
     }
   }
 

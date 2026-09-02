@@ -9,10 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { deleteAdvertisementAction } from "@/lib/actions/advertisement-actions";
-import { formatCurrency } from "@/lib/utils";
-import type { Advertisement } from "@/lib/api/types";
+import { resolveAdLocationDisplay } from "@/lib/utils";
+import type { Advertisement, AdvertisementImage } from "@/lib/api/types";
 
-type AdRow = Advertisement & { images: string[]; categoryName?: string };
+type AdRow = Advertisement & { images: AdvertisementImage[]; categoryName?: string };
 
 /** Client Component: renders the server-fetched advertisement list and handles delete (server action + router.refresh to resync). */
 export function AdvertisementsTable({ initialAdvertisements }: { initialAdvertisements: AdRow[] }) {
@@ -49,7 +49,6 @@ export function AdvertisementsTable({ initialAdvertisements }: { initialAdvertis
             <TableHead>Advertisement</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Location</TableHead>
-            <TableHead>Price</TableHead>
             <TableHead className="w-24 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -57,7 +56,7 @@ export function AdvertisementsTable({ initialAdvertisements }: { initialAdvertis
           {advertisements.length > 0 ? (
             advertisements.map((ad) => {
               const isPending = pendingId === ad.id;
-              const image = ad.images[0];
+              const image = ad.images[0]?.url;
               return (
                 <TableRow key={ad.id}>
                   <TableCell className="font-medium">
@@ -76,9 +75,8 @@ export function AdvertisementsTable({ initialAdvertisements }: { initialAdvertis
                     {ad.categoryName ?? `#${ad.categoryId}`}
                   </TableCell>
                   <TableCell dir="auto" className="text-muted-foreground">
-                    {ad.location}
+                    {resolveAdLocationDisplay(ad)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{formatCurrency(ad.price)}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
                       <Button type="button" variant="ghost" size="icon" aria-label="Edit advertisement" asChild>
@@ -107,7 +105,7 @@ export function AdvertisementsTable({ initialAdvertisements }: { initialAdvertis
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+              <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
                 No advertisements added yet.
               </TableCell>
             </TableRow>

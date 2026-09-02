@@ -25,10 +25,15 @@ export async function getChaletImages(chaletId: number): Promise<ChaletImage[]> 
   return unwrapList<ChaletImage>(data).map(resolveImage);
 }
 
-/** POST /api/chalet/{id}/images — multipart upload, auth required. New images start unapproved. */
-export async function uploadChaletImage(chaletId: number, file: File): Promise<void> {
+/**
+ * POST /api/chalet/{id}/images — multipart upload, auth required. New images
+ * start unapproved. Accepts one or several files in a single request — the
+ * backend now takes a plural `Files` field (confirmed in the Postman
+ * collection, which shows multiple `src` entries under one `Files` key).
+ */
+export async function uploadChaletImages(chaletId: number, files: File[]): Promise<void> {
   const formData = new FormData();
-  formData.append("File", file);
+  files.forEach((file) => formData.append("Files", file));
   await authFetch<unknown>(`/api/chalet/${chaletId}/images`, {
     method: "POST",
     body: formData,
@@ -40,6 +45,23 @@ export async function uploadChaletImage(chaletId: number, file: File): Promise<v
 export async function approveChaletImage(chaletId: number, imageId: number): Promise<void> {
   await authFetch<unknown>(`/api/chalet/${chaletId}/images/${imageId}/approve`, {
     method: "PATCH",
+    cache: "no-store",
+  });
+}
+
+/**
+ * PATCH /api/chalet/{id}/images/{imageId}/reject — auth required. A real,
+ * separate route from `.../approve` (confirmed directly by the backend dev,
+ * after an earlier attempt to fake this via a body flag on `.../approve`
+ * turned out to just approve regardless of body — that route has no reject
+ * behavior at all). Body key is capitalized `Reason`, per the backend dev's
+ * own example — doesn't delete the image, just flips it to rejected with
+ * this reason attached for the chalet owner to see.
+ */
+export async function rejectChaletImage(chaletId: number, imageId: number, reason: string): Promise<void> {
+  await authFetch<unknown>(`/api/chalet/${chaletId}/images/${imageId}/reject`, {
+    method: "PATCH",
+    body: { Reason: reason },
     cache: "no-store",
   });
 }

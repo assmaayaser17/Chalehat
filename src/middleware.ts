@@ -5,8 +5,8 @@ import { buildSession, isAccessTokenExpired } from "@/lib/auth/session";
 import { refreshTokensDeduped } from "@/lib/api/client";
 
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME || "chalehat_session";
-// Mirrors setSession's floor in lib/auth/session.ts.
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+// Mirrors setSession's "remember me" floor in lib/auth/session.ts.
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 function readSession(request: NextRequest): Session | null {
   const raw = request.cookies.get(COOKIE_NAME)?.value;
@@ -61,11 +61,25 @@ export async function middleware(request: NextRequest) {
   if (session && isAccessTokenExpired(session)) {
     try {
       const tokens = await refreshTokensDeduped(session.refreshToken);
-      refreshedSession = buildSession(tokens);
+      refreshedSession = buildSession(tokens, session.rememberMe);
       session = refreshedSession;
+      // Mutating the *request* cookies (not just the response's) is what
+      // actually makes a Server Component downstream in this same
+      // request/response cycle see the refreshed session via `cookies()`.
+      // Without this, the page's own `authFetch` still reads the stale,
+      // pre-refresh cookie, treats the access token as still expired, and
+      // tries to refresh *again* using the refresh token this middleware
+      // just consumed and rotated a moment ago. The backend's reuse
+      // detection then reads that second attempt as token theft and
+      // revokes the whole session — logging the user out immediately after
+      // a refresh that actually succeeded. This is the documented Next.js
+      // pattern for propagating a middleware-issued cookie forward (see
+      // Supabase's SSR auth-helper middleware for the same recipe).
+      request.cookies.set(COOKIE_NAME, JSON.stringify(refreshedSession));
     } catch {
       session = null;
       sessionExpired = true;
+      request.cookies.delete(COOKIE_NAME);
     }
   }
 
@@ -77,12 +91,21 @@ export async function middleware(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
-        maxAge: COOKIE_MAX_AGE,
+        // Only a "Remember me" login gets a long-lived cookie here — anyone
+        // else keeps a plain session cookie through every refresh too,
+        // otherwise the very first token refresh would silently turn an
+        // unchecked "Remember me" into a persistent login anyway.
+        ...(refreshedSession.rememberMe ? { maxAge: COOKIE_MAX_AGE } : {}),
       });
     } else if (sessionExpired) {
       response.cookies.delete(COOKIE_NAME);
     }
     return response;
+  }
+
+  /** `NextResponse.next()` that also forwards this request's (possibly refreshed) cookies downstream — see the doc comment above. */
+  function next(): NextResponse {
+    return finish(NextResponse.next({ request }));
   }
 
   const isAuthPage = pathname === "/login";
@@ -105,7 +128,7 @@ export async function middleware(request: NextRequest) {
       response.cookies.delete(COOKIE_NAME);
       return response;
     }
-    return finish(NextResponse.next());
+    return next();
   }
 
   if (isMyBookings) {
@@ -125,11 +148,11 @@ export async function middleware(request: NextRequest) {
     if (session.role !== "Customer") {
       return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
     }
-    return finish(NextResponse.next());
+    return next();
   }
 
   if (!isDashboard) {
-    return finish(NextResponse.next());
+    return next();
   }
 
   // No session at all -> bounce to login, remembering where they were headed.
@@ -215,7 +238,7 @@ export async function middleware(request: NextRequest) {
     return finish(NextResponse.redirect(new URL(homeForRole(session.role), request.url)));
   }
 
-  return finish(NextResponse.next());
+  return next();
 }
 
 export const config = {

@@ -22,9 +22,11 @@ import { ApiError } from "@/lib/api/client";
 import { getChaletById } from "@/lib/api/chalet";
 import { getChaletSeasonalPrices } from "@/lib/api/chalet-seasonal-prices";
 import { getChaletWeekdayPrices } from "@/lib/api/chalet-weekday-prices";
+import { getMyBookings } from "@/lib/api/booking";
 import { getSession } from "@/lib/auth/session";
 import { BOOKING_TYPE_LABELS, cn, formatCurrency, formatDate, getActiveBookingTypes } from "@/lib/utils";
 import { ChaletBookingWidget } from "@/components/chalets/chalet-booking-widget";
+import { ChaletAmenitiesDisplay } from "@/components/chalets/chalet-amenities-display";
 import type { ChaletSeasonalPrice, ChaletWeekdayPrice } from "@/lib/api/types";
 
 interface PageProps {
@@ -58,6 +60,23 @@ export default async function ChaletDetailPage({ params }: PageProps) {
   if (!chalet) notFound();
   const session = await getSession();
 
+  // The API rejects a second booking request for the same chalet while one
+  // is still Pending, but only after the customer's already filled in the
+  // whole form — checking here lets the widget block that upfront instead.
+  // Best-effort: a failure here shouldn't break the whole booking widget,
+  // the backend still enforces this either way.
+  let hasPendingBookingForThisChalet = false;
+  if (session?.role === "Customer") {
+    try {
+      const myBookings = await getMyBookings();
+      hasPendingBookingForThisChalet = myBookings.some(
+        (booking) => booking.chaletId === chalet.id && booking.status === "Pending",
+      );
+    } catch {
+      // Ignored — see comment above.
+    }
+  }
+
   const approvedImages = chalet.images?.filter((img) => img.isApproved) ?? [];
   const coverImage = chalet.coverImageUrl ?? approvedImages[0]?.url;
   const galleryImages = approvedImages.filter((img) => img.url !== coverImage);
@@ -82,6 +101,10 @@ export default async function ChaletDetailPage({ params }: PageProps) {
     // Swallowed intentionally — see comment above.
   }
   const hasSpecialRates = seasonalPrices.length > 0 || weekdayPrices.length > 0;
+  // On this public page, only the owning ChaletAdmin gets the Remove button —
+  // SuperAdmin/SystemAdmin still manage amenities from the dedicated
+  // /dashboard/chalets/{id}/amenities page, not from here.
+  const canManageAmenities = session?.role === "ChaletAdmin" && chalet.ownerAdminId === session.userId;
 
   return (
     <div className="container py-8 md:py-10">
@@ -159,25 +182,11 @@ export default async function ChaletDetailPage({ params }: PageProps) {
             <>
               <Separator className="my-6" />
               <h2 className="mb-3 text-lg font-semibold text-primary-800">Amenities &amp; services</h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {chalet.amenities.map((amenity) => (
-                  <div
-                    key={amenity.id}
-                    dir="auto"
-                    className="flex items-center gap-3 rounded-xl border border-border bg-sand-50 p-3.5"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-primary-700">
-                      {amenity.iconUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={amenity.iconUrl} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <Sparkle className="h-4 w-4" />
-                      )}
-                    </span>
-                    <span className="text-sm font-medium text-foreground">{amenity.name}</span>
-                  </div>
-                ))}
-              </div>
+              <ChaletAmenitiesDisplay
+                chaletId={chalet.id}
+                amenities={chalet.amenities}
+                canManage={canManageAmenities}
+              />
             </>
           )}
 
@@ -354,7 +363,12 @@ export default async function ChaletDetailPage({ params }: PageProps) {
 
               {/* Only the role crosses the client boundary — never the session
                   itself, which carries the access/refresh tokens. */}
-              <ChaletBookingWidget chalet={chalet} isLoggedIn={!!session} role={session?.role ?? null} />
+              <ChaletBookingWidget
+                chalet={chalet}
+                isLoggedIn={!!session}
+                role={session?.role ?? null}
+                hasPendingBooking={hasPendingBookingForThisChalet}
+              />
 
               {whatsappHref && (
                 <Button

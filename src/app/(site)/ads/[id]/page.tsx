@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ApiError } from "@/lib/api/client";
 import { getAdvertisementById } from "@/lib/api/advertisements";
 import { getAdvertisementCategories } from "@/lib/api/advertisement-categories";
-import { formatCurrency } from "@/lib/utils";
+import { resolveAdLocationDisplay } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -47,7 +47,7 @@ export default async function AdDetailPage({ params }: PageProps) {
     <div className="container max-w-4xl space-y-8 py-8 md:py-10">
       {coverImage ? (
         <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-primary-50">
-          <Image src={coverImage} alt={ad.name} fill sizes="100vw" className="object-cover" priority />
+          <Image src={coverImage.url} alt={ad.name} fill sizes="100vw" className="object-cover" priority />
         </div>
       ) : (
         <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-primary-50 text-primary-300">
@@ -57,9 +57,9 @@ export default async function AdDetailPage({ params }: PageProps) {
 
       {restImages.length > 0 && (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-          {restImages.map((url) => (
-            <div key={url} className="relative aspect-square overflow-hidden rounded-lg bg-primary-50">
-              <Image src={url} alt="" fill sizes="200px" className="object-cover" />
+          {restImages.map((image) => (
+            <div key={image.id} className="relative aspect-square overflow-hidden rounded-lg bg-primary-50">
+              <Image src={image.url} alt="" fill sizes="200px" className="object-cover" />
             </div>
           ))}
         </div>
@@ -71,13 +71,11 @@ export default async function AdDetailPage({ params }: PageProps) {
             <h1 className="text-2xl font-bold text-foreground">{ad.name}</h1>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 shrink-0 text-primary-600" />
-              {ad.location}
+              {resolveAdLocationDisplay(ad)}
             </p>
           </div>
           {categoryName && <Badge>{categoryName}</Badge>}
         </div>
-
-        {ad.price > 0 && <p className="text-2xl font-bold tabular-nums text-accent-700">{formatCurrency(ad.price)}</p>}
 
         <Separator />
 

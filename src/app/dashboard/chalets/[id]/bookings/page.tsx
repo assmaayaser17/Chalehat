@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ApiError } from "@/lib/api/client";
 import { getChaletById } from "@/lib/api/chalet";
 import { getChaletBookings, getChaletCalendar } from "@/lib/api/chalet-bookings";
+import { getUsersByRole } from "@/lib/api/admin";
 import { buildBookingDatesById, monthRange } from "@/lib/booking-calendar";
 import type { ChaletCalendarDay } from "@/lib/api/types";
 
@@ -64,6 +65,19 @@ export default async function ChaletBookingsPage({ params, searchParams }: PageP
   }
   const bookingDatesById = buildBookingDatesById(calendarDays);
 
+  // `GET /api/Booking/chalet/{id}` returns `userFullName` blank for most
+  // bookings — confirmed live, see the `Booking` type's doc comment. There's
+  // no fix on the booking endpoint itself, but `GET /api/Admin/by-role/Customer`
+  // (open to ChaletAdmin too, per the API docs) does return real names, so
+  // names are backfilled here by matching `booking.userId` against it.
+  let customerNamesById: Record<string, string> = {};
+  try {
+    const customers = await getUsersByRole("Customer");
+    customerNamesById = Object.fromEntries(customers.map((customer) => [customer.id, customer.fullName]));
+  } catch {
+    // Non-critical — `ChaletBookingsManager` already falls back to `#id` when a name isn't available.
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <PageHeader
@@ -101,7 +115,12 @@ export default async function ChaletBookingsPage({ params, searchParams }: PageP
           {errorMessage ? (
             <Alert variant="destructive">{errorMessage}</Alert>
           ) : (
-            <ChaletBookingsManager chaletId={chaletId} bookings={bookings} bookingDatesById={bookingDatesById} />
+            <ChaletBookingsManager
+              chaletId={chaletId}
+              bookings={bookings}
+              bookingDatesById={bookingDatesById}
+              customerNamesById={customerNamesById}
+            />
           )}
         </CardContent>
       </Card>

@@ -39,7 +39,7 @@ export default async function ChaletAmenitiesPage({ params }: PageProps) {
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
         title={`Amenities — ${chalet.name}`}
-        description="Amenities can only be added here, not removed."
+        description="Add amenities to this chalet, or remove ones it no longer has."
       />
 
       <Card>

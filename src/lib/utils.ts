@@ -19,6 +19,18 @@ export function formatCurrency(amount: number, currency = "NIS") {
   }).format(amount);
 }
 
+/**
+ * `Advertisement.location` has shown up blank for individual ads — most
+ * likely a prior direct-API edit that omitted it and the backend treating
+ * the PUT as a full overwrite rather than a merge (`address` isn't affected
+ * by that same request shape, so it's a reasonable fallback). Falls back to
+ * a plain dash only if both are empty, so callers never render a bare
+ * MapPin icon next to nothing.
+ */
+export function resolveAdLocationDisplay(ad: { location: string; address?: string }): string {
+  return ad.location || ad.address || "—";
+}
+
 /** Formats an ISO date/time string as a short date. */
 export function formatDate(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value;

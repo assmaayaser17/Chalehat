@@ -4,9 +4,9 @@ import * as React from "react";
 import { Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdCard } from "@/components/advertisements/ad-card";
-import type { Advertisement, AdvertisementCategory } from "@/lib/api/types";
+import type { Advertisement, AdvertisementCategory, AdvertisementImage } from "@/lib/api/types";
 
-type AdRow = Advertisement & { images: string[] };
+type AdRow = Advertisement & { images: AdvertisementImage[] };
 
 /** Client Component: renders the ads grid behind an "All + one per category" pill filter. */
 export function AdsGrid({ ads, categories }: { ads: AdRow[]; categories: AdvertisementCategory[] }) {

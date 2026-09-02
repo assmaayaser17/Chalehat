@@ -111,7 +111,7 @@ function getFieldNames(payload: unknown): string[] {
  * tolerates a few common alternate field names the .NET API might actually
  * use, instead of assuming `accessToken`/`refreshToken` blindly.
  */
-export function buildSession(tokens: unknown): Session {
+export function buildSession(tokens: unknown, rememberMe?: boolean): Session {
   const accessToken = resolveTokenField(tokens, ["accessToken", "access_token", "token", "jwt"]);
   const refreshToken = resolveTokenField(tokens, ["refreshToken", "refresh_token", "refreshtoken", "refreshToken"]);
 
@@ -130,6 +130,7 @@ export function buildSession(tokens: unknown): Session {
     fullName: claims.full_name,
     email: claims.emailaddress,
     role: claims.role,
+    rememberMe,
   };
 }
 
@@ -144,19 +145,34 @@ export async function getSession(): Promise<Session | null> {
   }
 }
 
-export async function setSession(session: Session) {
+/**
+ * `rememberMe` (from the login form's checkbox) controls whether this
+ * survives closing the browser at all — without it, this now sets a true
+ * session cookie (no `maxAge`), matching what "Remember me" is supposed to
+ * mean. Checked, it keeps the previous behavior: a long-lived cookie so the
+ * refresh token (which usually outlives the access token) still has a
+ * cookie to live in — `refresh()` rotates both on each use.
+ */
+export async function setSession(session: Session, rememberMe = false) {
   const store = await cookies();
-  const claims = decodeAccessToken(session.accessToken);
-  const maxAge = Math.max(claims.exp - Math.floor(Date.now() / 1000), 60 * 5);
 
-  store.set(COOKIE_NAME, JSON.stringify(session), {
+  const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
-    // Refresh tokens usually outlive the access token, so keep the cookie
-    // alive well beyond the access token's expiry — refresh() rotates both.
-    maxAge: Math.max(maxAge, 60 * 60 * 24 * 7),
+  };
+
+  if (!rememberMe) {
+    store.set(COOKIE_NAME, JSON.stringify(session), options);
+    return;
+  }
+
+  const claims = decodeAccessToken(session.accessToken);
+  const maxAge = Math.max(claims.exp - Math.floor(Date.now() / 1000), 60 * 5);
+  store.set(COOKIE_NAME, JSON.stringify(session), {
+    ...options,
+    maxAge: Math.max(maxAge, 60 * 60 * 24 * 30),
   });
 }
 

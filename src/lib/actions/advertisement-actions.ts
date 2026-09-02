@@ -2,10 +2,17 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { createAdvertisement, deleteAdvertisement, updateAdvertisement } from "@/lib/api/advertisements";
+import {
+  addAdvertisementImage,
+  createAdvertisement,
+  deleteAdvertisement,
+  deleteAdvertisementImage,
+  reorderAdvertisementImages,
+  updateAdvertisement,
+} from "@/lib/api/advertisements";
 import { ApiError } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
-import type { AdvertisementFormValues } from "@/lib/validations/advertisement";
+import type { UpdateAdvertisementRequest } from "@/lib/api/types";
 import type { ActionResult } from "@/lib/auth/actions";
 
 function revalidateAdvertisements(id?: number) {
@@ -38,9 +45,10 @@ export async function createAdvertisementAction(formData: FormData): Promise<Act
   redirect("/dashboard/advertisements");
 }
 
+/** `values` includes `price` unchanged from the ad's current record — the form no longer shows or edits it, see `EditAdvertisementForm`. */
 export async function updateAdvertisementAction(
   id: number,
-  values: AdvertisementFormValues,
+  values: UpdateAdvertisementRequest,
 ): Promise<ActionResult> {
   const unauthorized = await requireStaffAdmin();
   if (unauthorized) return unauthorized;
@@ -53,6 +61,52 @@ export async function updateAdvertisementAction(
   }
   revalidateAdvertisements(id);
   redirect("/dashboard/advertisements");
+}
+
+export async function addAdvertisementImageAction(adId: number, formData: FormData): Promise<ActionResult> {
+  const unauthorized = await requireStaffAdmin();
+  if (unauthorized) return unauthorized;
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { success: false, message: "Choose an image file first." };
+  }
+  try {
+    await addAdvertisementImage(adId, file);
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    return { success: false, message: "An unexpected error occurred while adding the image." };
+  }
+  revalidateAdvertisements(adId);
+  return { success: true };
+}
+
+export async function deleteAdvertisementImageAction(adId: number, imageId: number): Promise<ActionResult> {
+  const unauthorized = await requireStaffAdmin();
+  if (unauthorized) return unauthorized;
+
+  try {
+    await deleteAdvertisementImage(adId, imageId);
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    return { success: false, message: "An unexpected error occurred while deleting the image." };
+  }
+  revalidateAdvertisements(adId);
+  return { success: true };
+}
+
+export async function reorderAdvertisementImagesAction(adId: number, orderedImageIds: number[]): Promise<ActionResult> {
+  const unauthorized = await requireStaffAdmin();
+  if (unauthorized) return unauthorized;
+
+  try {
+    await reorderAdvertisementImages(adId, orderedImageIds);
+  } catch (err) {
+    if (err instanceof ApiError) return { success: false, message: err.message };
+    return { success: false, message: "An unexpected error occurred while reordering images." };
+  }
+  revalidateAdvertisements(adId);
+  return { success: true };
 }
 
 export async function deleteAdvertisementAction(id: number): Promise<ActionResult> {

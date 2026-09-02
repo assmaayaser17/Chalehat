@@ -33,7 +33,7 @@ export async function createChaletWeekdayPriceAction(
 
 export async function deleteChaletWeekdayPriceAction(chaletId: number, priceId: number): Promise<ActionResult> {
   try {
-    await deleteChaletWeekdayPrice(chaletId, priceId);
+    await deleteChaletWeekdayPrice(priceId);
   } catch (err) {
     if (err instanceof ApiError) return { success: false, message: err.message };
     return { success: false, message: "An unexpected error occurred while removing the weekday price." };
