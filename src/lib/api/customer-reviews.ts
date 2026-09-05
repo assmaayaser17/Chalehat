@@ -3,14 +3,18 @@ import "server-only";
 import { authFetch, unwrapObject, unwrapPaginated } from "@/lib/api/client";
 import type { AddCustomerReviewRequest, CustomerBookingStats, CustomerReviewRecord, PaginatedResult } from "@/lib/api/types";
 
-/** POST /api/admin/users/{userId}/reviews — SuperAdmin/SystemAdmin/ChaletAdmin. See `AddCustomerReviewRequest`. */
-export async function addCustomerReview(userId: string, data: AddCustomerReviewRequest): Promise<CustomerReviewRecord> {
-  const result = await authFetch<unknown>(`/api/admin/users/${userId}/reviews`, {
+/**
+ * POST /api/admin/users/{userId}/reviews/reviews — SuperAdmin/SystemAdmin/ChaletAdmin.
+ * Confirmed live via Postman (201 Created): the path really does repeat
+ * "reviews" twice — that isn't a typo. The response is just
+ * `{ success, message }`, not a review record, so it doesn't return one.
+ */
+export async function addCustomerReview(userId: string, data: AddCustomerReviewRequest): Promise<void> {
+  await authFetch<unknown>(`/api/admin/users/${userId}/reviews/reviews`, {
     method: "POST",
     body: data,
     cache: "no-store",
   });
-  return unwrapObject<CustomerReviewRecord>(result);
 }
 
 /** GET /api/admin/users/{userId}/reviews/booking-stats — confirmed via a live call. SuperAdmin / SystemAdmin / ChaletAdmin. */

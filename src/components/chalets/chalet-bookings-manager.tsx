@@ -96,6 +96,7 @@ export function ChaletBookingsManager({
   const [reason, setReason] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   const [paymentAmount, setPaymentAmount] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState("Cash");
@@ -113,6 +114,7 @@ export function ChaletBookingsManager({
 
   async function startApprove(bookingId: number) {
     setError(null);
+    setSuccessMessage(null);
     setRefundWindowHours("48");
     setLoadingConflictsFor(bookingId);
     try {
@@ -132,6 +134,7 @@ export function ChaletBookingsManager({
 
   function startReject(bookingId: number) {
     setError(null);
+    setSuccessMessage(null);
     setReason("");
     setPendingAction({ bookingId, type: "reject" });
   }
@@ -179,6 +182,7 @@ export function ChaletBookingsManager({
 
   function startPay(bookingId: number) {
     setError(null);
+    setSuccessMessage(null);
     setPaymentAmount("");
     setPaymentMethod("Cash");
     setPendingAction({ bookingId, type: "pay" });
@@ -202,6 +206,7 @@ export function ChaletBookingsManager({
 
   function startReview(bookingId: number) {
     setError(null);
+    setSuccessMessage(null);
     setReviewCleanliness("3");
     setReviewDisturbance("3");
     setReviewPaymentReliability("3");
@@ -211,6 +216,7 @@ export function ChaletBookingsManager({
 
   async function confirmReview(bookingId: number, userId: string) {
     setError(null);
+    setSuccessMessage(null);
     setIsSaving(true);
     try {
       const result = await addCustomerReviewAction(
@@ -226,6 +232,7 @@ export function ChaletBookingsManager({
         return;
       }
       setPendingAction(null);
+      setSuccessMessage("Review submitted successfully.");
       router.refresh();
     } finally {
       setIsSaving(false);
@@ -260,6 +267,7 @@ export function ChaletBookingsManager({
   return (
     <div className="space-y-4">
       {error && <Alert variant="destructive">{error}</Alert>}
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
       <Table>
         <TableHeader>

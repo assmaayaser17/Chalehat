@@ -49,8 +49,10 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
       showPrice: true,
       minNights: 1,
       maxNights: 7,
-      checkInTime: "15:00",
-      checkOutTime: "12:00",
+      morningStartTime: "08:00",
+      morningEndTime: "14:00",
+      eveningStartTime: "15:00",
+      eveningEndTime: "22:00",
       allowedBookingTypes: ["Family", "Youth"],
     },
   });
@@ -175,11 +177,20 @@ export function CreateChaletForm({ chaletAdmins = [] }: { chaletAdmins?: ApiUser
           <FormField id="maxNights" label="Max nights" error={errors.maxNights?.message}>
             <Input id="maxNights" type="number" {...register("maxNights")} />
           </FormField>
-          <FormField id="checkInTime" label="Check-in time" error={errors.checkInTime?.message}>
-            <Input id="checkInTime" type="time" {...register("checkInTime")} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <FormField id="morningStartTime" label="Morning check-in" error={errors.morningStartTime?.message}>
+            <Input id="morningStartTime" type="time" {...register("morningStartTime")} />
           </FormField>
-          <FormField id="checkOutTime" label="Check-out time" error={errors.checkOutTime?.message}>
-            <Input id="checkOutTime" type="time" {...register("checkOutTime")} />
+          <FormField id="morningEndTime" label="Morning check-out" error={errors.morningEndTime?.message}>
+            <Input id="morningEndTime" type="time" {...register("morningEndTime")} />
+          </FormField>
+          <FormField id="eveningStartTime" label="Evening check-in" error={errors.eveningStartTime?.message}>
+            <Input id="eveningStartTime" type="time" {...register("eveningStartTime")} />
+          </FormField>
+          <FormField id="eveningEndTime" label="Evening check-out" error={errors.eveningEndTime?.message}>
+            <Input id="eveningEndTime" type="time" {...register("eveningEndTime")} />
           </FormField>
         </div>
 

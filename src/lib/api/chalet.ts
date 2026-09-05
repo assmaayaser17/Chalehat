@@ -24,14 +24,39 @@ export async function getAllChalets(): Promise<Chalet[]> {
   return unwrapList<Chalet>(data).map(resolveChaletMedia);
 }
 
+export interface ChaletListFilters {
+  /** Matches against Name/Address. */
+  search?: string;
+  status?: "Active" | "UnderMaintenance" | "Inactive";
+  /** Both filter on BasePrice. */
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;
+  sortDescending?: boolean;
+}
+
 /**
- * GET /api/Chalet?page&pageSize — public. The endpoint is paginated
- * server-side (confirmed: `{ items, totalCount, page, pageSize, totalPages }`
- * nested under `message`) — used by the home page listing so the grid and
- * page-number controls reflect the real total instead of fetching everything.
+ * GET /api/Chalet?page&pageSize&search&status&minPrice&maxPrice&sortBy&sortDescending
+ * — public. Confirmed via the live Swagger docs (`/swagger`). The endpoint is
+ * paginated server-side (`{ items, totalCount, page, pageSize, totalPages }`
+ * nested under `message`) — used by the home page listing and the dashboard's
+ * "All Chalets" admin view so both reflect the real total instead of
+ * fetching everything.
  */
-export async function getChaletsPage(page: number, pageSize: number): Promise<PaginatedResult<Chalet>> {
-  const data = await apiFetch<unknown>(`/api/Chalet?page=${page}&pageSize=${pageSize}`, {
+export async function getChaletsPage(
+  page: number,
+  pageSize: number,
+  filters: ChaletListFilters = {},
+): Promise<PaginatedResult<Chalet>> {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (filters.search) params.set("search", filters.search);
+  if (filters.status) params.set("status", filters.status);
+  if (typeof filters.minPrice === "number") params.set("minPrice", String(filters.minPrice));
+  if (typeof filters.maxPrice === "number") params.set("maxPrice", String(filters.maxPrice));
+  if (filters.sortBy) params.set("sortBy", filters.sortBy);
+  if (typeof filters.sortDescending === "boolean") params.set("sortDescending", String(filters.sortDescending));
+
+  const data = await apiFetch<unknown>(`/api/Chalet?${params.toString()}`, {
     next: { revalidate: 60, tags: ["chalets"] },
   });
   const result = unwrapPaginated<Chalet>(data);

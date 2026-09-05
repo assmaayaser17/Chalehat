@@ -34,8 +34,10 @@ export const createChaletSchema = z
     bathroomsCount: z.coerce.number().int().min(0),
     minNights: z.coerce.number().int().positive(),
     maxNights: z.coerce.number().int().positive(),
-    checkInTime: timeOfDaySchema,
-    checkOutTime: timeOfDaySchema,
+    morningStartTime: timeOfDaySchema,
+    morningEndTime: timeOfDaySchema,
+    eveningStartTime: timeOfDaySchema,
+    eveningEndTime: timeOfDaySchema,
     cancellationPolicy: z.string().min(3, "Cancellation policy is required"),
     whatsAppNumber: phoneNumberSchema,
     allowedBookingTypes: z.array(z.enum(BOOKING_TYPES)).min(1, "Choose at least one booking type"),
@@ -44,6 +46,14 @@ export const createChaletSchema = z
   .refine((data) => data.maxNights >= data.minNights, {
     message: "Max nights must be greater than or equal to min nights",
     path: ["maxNights"],
+  })
+  .refine((data) => data.morningEndTime > data.morningStartTime, {
+    message: "Morning check-out must be after morning check-in",
+    path: ["morningEndTime"],
+  })
+  .refine((data) => data.eveningEndTime > data.eveningStartTime, {
+    message: "Evening check-out must be after evening check-in",
+    path: ["eveningEndTime"],
   });
 
 export type CreateChaletFormValues = z.infer<typeof createChaletSchema>;

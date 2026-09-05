@@ -185,8 +185,11 @@ export interface CreateChaletRequest {
   bathroomsCount: number;
   minNights: number;
   maxNights: number;
-  checkInTime: string;
-  checkOutTime: string;
+  /** Replaced the old single `checkInTime`/`checkOutTime` pair — confirmed by the backend dev directly, since neither the Postman collection nor Swagger had caught up to this change yet. */
+  morningStartTime: string;
+  morningEndTime: string;
+  eveningStartTime: string;
+  eveningEndTime: string;
   cancellationPolicy: string;
   whatsAppNumber: string;
   allowedBookingTypes: BookingType[];
@@ -637,12 +640,11 @@ export interface CreateChaletReviewRequest {
 /**
  * One admin-authored review of a customer's behavior on one of their
  * bookings — separate from `ChaletReview` (which is the reverse: a customer
- * reviewing a chalet). Never shown to the customer or publicly. The app
- * only ever *reads* these (via `getCustomerBookingStats`/
- * `getAllCustomerReviews`) — creating one isn't exposed in the UI, since
- * reviews are meant to be a customer-facing action, not something a chalet
- * admin does to a customer. The exact shape when populated is unverified
- * (every live call returned an empty list/array) — read defensively.
+ * reviewing a chalet). Never shown to the customer or publicly. Read via
+ * `getCustomerBookingStats`/`getAllCustomerReviews`; created via
+ * `addCustomerReview` (see `AddCustomerReviewRequest`). The exact shape when
+ * populated is unverified (every live read returned an empty list/array) —
+ * read defensively.
  */
 export interface CustomerReviewRecord {
   id?: number;
@@ -659,11 +661,12 @@ export interface CustomerReviewRecord {
 }
 
 /**
- * POST /api/admin/users/{id}/reviews — SuperAdmin/SystemAdmin/ChaletAdmin.
- * A ChaletAdmin may only review a customer for a booking made at their own
- * chalet, per the API docs — enforced backend-side; the app only ever
- * surfaces this action from a chalet's own bookings page, where that's
- * already guaranteed by construction.
+ * POST /api/admin/users/{id}/reviews/reviews — SuperAdmin/SystemAdmin/ChaletAdmin.
+ * Confirmed live via Postman — the doubled "reviews/reviews" path segment
+ * isn't a typo. A ChaletAdmin may only review a customer for a booking made
+ * at their own chalet, per the API docs — enforced backend-side; the app
+ * only ever surfaces this action from a chalet's own bookings page, where
+ * that's already guaranteed by construction.
  */
 export interface AddCustomerReviewRequest {
   chaletId: number;

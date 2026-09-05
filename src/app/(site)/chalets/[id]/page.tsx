@@ -348,18 +348,19 @@ export default async function ChaletDetailPage({ params }: PageProps) {
 
               <Separator />
 
-              {(chalet.checkInTime || chalet.checkOutTime) && (
-                <>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CalendarClock className="h-4 w-4 shrink-0 text-primary-600" />
-                    {chalet.checkInTime && `Check-in ${chalet.checkInTime.slice(0, 5)}`}
-                    {chalet.checkInTime && chalet.checkOutTime && " — "}
-                    {chalet.checkOutTime && `Check-out ${chalet.checkOutTime.slice(0, 5)}`}
-                  </div>
-
-                  <Separator />
-                </>
+              {(chalet.morningStartTime || chalet.morningEndTime) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CalendarClock className="h-4 w-4 shrink-0 text-primary-600" />
+                  Morning {chalet.morningStartTime?.slice(0, 5)} – {chalet.morningEndTime?.slice(0, 5)}
+                </div>
               )}
+              {(chalet.eveningStartTime || chalet.eveningEndTime) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CalendarClock className="h-4 w-4 shrink-0 text-primary-600" />
+                  Evening {chalet.eveningStartTime?.slice(0, 5)} – {chalet.eveningEndTime?.slice(0, 5)}
+                </div>
+              )}
+              {(chalet.morningStartTime || chalet.eveningStartTime) && <Separator />}
 
               {/* Only the role crosses the client boundary — never the session
                   itself, which carries the access/refresh tokens. */}
